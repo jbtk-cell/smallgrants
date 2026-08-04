@@ -1,0 +1,12 @@
+data/
+*.duckdb
+*.duckdb.wal
+*.parquet
+*.zip
+*.csv
+.venv/
+__pycache__/
+*.pyc
+.pytest_cache/
+.DS_Store
+models/

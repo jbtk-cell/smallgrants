@@ -1,0 +1,375 @@
+﻿<?xml version="1.0" encoding="utf-8"?>
+<Return xmlns="http://www.irs.gov/efile" returnVersion="2024v5.2">
+  <ReturnHeader binaryAttachmentCnt="0">
+    <ReturnTs>2026-01-02T12:34:23-05:00</ReturnTs>
+    <TaxPeriodEndDt>2025-06-30</TaxPeriodEndDt>
+    <ReturnTypeCd>990PF</ReturnTypeCd>
+    <TaxPeriodBeginDt>2024-07-01</TaxPeriodBeginDt>
+    <Filer>
+      <EIN>742451341</EIN>
+      <BusinessName>
+        <BusinessNameLine1Txt>VAN HORN FOUNDATION</BusinessNameLine1Txt>
+      </BusinessName>
+      <InCareOfNm>% Daniel Haworth</InCareOfNm>
+      <BusinessNameControlTxt>VANH</BusinessNameControlTxt>
+      <USAddress>
+        <AddressLine1Txt>1110 E MISSOURI AVE STE 200</AddressLine1Txt>
+        <CityNm>Phoenix</CityNm>
+        <StateAbbreviationCd>AZ</StateAbbreviationCd>
+        <ZIPCd>85014</ZIPCd>
+      </USAddress>
+    </Filer>
+    <BusinessOfficerGrp>
+      <PersonNm>DANIEL HAWORTH</PersonNm>
+      <PersonTitleTxt>PRESIDENT</PersonTitleTxt>
+      <SignatureDt>2025-12-26</SignatureDt>
+    </BusinessOfficerGrp>
+    <IRSResponsiblePrtyInfoCurrInd>true</IRSResponsiblePrtyInfoCurrInd>
+    <TaxYr>2024</TaxYr>
+    <BuildTS>2025-03-06 01:10:19Z</BuildTS>
+  </ReturnHeader>
+  <ReturnData documentCnt="3">
+    <IRS990PF documentId="IRS990PF">
+      <Organization501c3ExemptPFInd>X</Organization501c3ExemptPFInd>
+      <FMVAssetsEOYAmt>581618</FMVAssetsEOYAmt>
+      <MethodOfAccountingCashInd>X</MethodOfAccountingCashInd>
+      <AnalysisOfRevenueAndExpenses>
+        <ScheduleBNotRequiredInd>X</ScheduleBNotRequiredInd>
+        <InterestOnSavRevAndExpnssAmt>2130</InterestOnSavRevAndExpnssAmt>
+        <InterestOnSavNetInvstIncmAmt>2130</InterestOnSavNetInvstIncmAmt>
+        <TotalRevAndExpnssAmt>2130</TotalRevAndExpnssAmt>
+        <TotalNetInvstIncmAmt>2130</TotalNetInvstIncmAmt>
+        <TaxesRevAndExpnssAmt referenceDocumentId="TaxesSchedule">29</TaxesRevAndExpnssAmt>
+        <OtherExpensesRevAndExpnssAmt referenceDocumentId="OtherExpensesSchedul-133-Copy1">297</OtherExpensesRevAndExpnssAmt>
+        <OtherExpensesNetInvstIncmAmt>60</OtherExpensesNetInvstIncmAmt>
+        <TotOprExpensesRevAndExpnssAmt>326</TotOprExpensesRevAndExpnssAmt>
+        <TotOprExpensesNetInvstIncmAmt>60</TotOprExpensesNetInvstIncmAmt>
+        <TotOprExpensesDsbrsChrtblAmt>0</TotOprExpensesDsbrsChrtblAmt>
+        <ContriPaidRevAndExpnssAmt>270000</ContriPaidRevAndExpnssAmt>
+        <ContriPaidDsbrsChrtblAmt>270000</ContriPaidDsbrsChrtblAmt>
+        <TotalExpensesRevAndExpnssAmt>270326</TotalExpensesRevAndExpnssAmt>
+        <TotalExpensesNetInvstIncmAmt>60</TotalExpensesNetInvstIncmAmt>
+        <TotalExpensesDsbrsChrtblAmt>270000</TotalExpensesDsbrsChrtblAmt>
+        <ExcessRevenueOverExpensesAmt>-268196</ExcessRevenueOverExpensesAmt>
+        <NetInvestmentIncomeAmt>2070</NetInvestmentIncomeAmt>
+        <AdjustedNetIncomeAmt>0</AdjustedNetIncomeAmt>
+      </AnalysisOfRevenueAndExpenses>
+      <Form990PFBalanceSheetsGrp>
+        <SavAndTempCashInvstBOYAmt>849814</SavAndTempCashInvstBOYAmt>
+        <SavAndTempCashInvstEOYAmt>581147</SavAndTempCashInvstEOYAmt>
+        <SavAndTempCashInvstEOYFMVAmt>581147</SavAndTempCashInvstEOYFMVAmt>
+        <PrepaidExpensesEOYAmt>471</PrepaidExpensesEOYAmt>
+        <PrepaidExpensesEOYFMVAmt>471</PrepaidExpensesEOYFMVAmt>
+        <TotalAssetsBOYAmt>849814</TotalAssetsBOYAmt>
+        <TotalAssetsEOYAmt>581618</TotalAssetsEOYAmt>
+        <TotalAssetsEOYFMVAmt>581618</TotalAssetsEOYFMVAmt>
+        <TotalLiabilitiesBOYAmt>0</TotalLiabilitiesBOYAmt>
+        <TotalLiabilitiesEOYAmt>0</TotalLiabilitiesEOYAmt>
+        <OrgDoesNotFollowFASB117Ind>X</OrgDoesNotFollowFASB117Ind>
+        <CapitalStockBOYAmt>232655</CapitalStockBOYAmt>
+        <CapitalStockEOYAmt>232655</CapitalStockEOYAmt>
+        <RetainedEarningBOYAmt>617159</RetainedEarningBOYAmt>
+        <RetainedEarningEOYAmt>348963</RetainedEarningEOYAmt>
+        <TotNetAstOrFundBalancesBOYAmt>849814</TotNetAstOrFundBalancesBOYAmt>
+        <TotNetAstOrFundBalancesEOYAmt>581618</TotNetAstOrFundBalancesEOYAmt>
+        <TotalLiabilitiesNetAstBOYAmt>849814</TotalLiabilitiesNetAstBOYAmt>
+        <TotalLiabilitiesNetAstEOYAmt>581618</TotalLiabilitiesNetAstEOYAmt>
+      </Form990PFBalanceSheetsGrp>
+      <ChgInNetAssetsFundBalancesGrp>
+        <TotNetAstOrFundBalancesBOYAmt>849814</TotNetAstOrFundBalancesBOYAmt>
+        <ExcessRevenueOverExpensesAmt>-268196</ExcessRevenueOverExpensesAmt>
+        <SubtotalAmt>581618</SubtotalAmt>
+        <TotNetAstOrFundBalancesEOYAmt>581618</TotNetAstOrFundBalancesEOYAmt>
+      </ChgInNetAssetsFundBalancesGrp>
+      <ExciseTaxBasedOnInvstIncmGrp>
+        <InvestmentIncomeExciseTaxAmt>29</InvestmentIncomeExciseTaxAmt>
+        <TaxUnderSection511Amt>0</TaxUnderSection511Amt>
+        <SubtotalAmt>29</SubtotalAmt>
+        <SubtitleATaxAmt>0</SubtitleATaxAmt>
+        <TaxBasedOnInvestmentIncomeAmt>29</TaxBasedOnInvestmentIncomeAmt>
+        <EstimatedPlusOvpmtIncmTxAmt>471</EstimatedPlusOvpmtIncmTxAmt>
+        <TotalPaymentsAndCreditsAmt>471</TotalPaymentsAndCreditsAmt>
+        <OverpaymentAmt>442</OverpaymentAmt>
+        <AppliedToESTaxAmt>442</AppliedToESTaxAmt>
+      </ExciseTaxBasedOnInvstIncmGrp>
+      <StatementsRegardingActyGrp>
+        <LegislativePoliticalActyInd>false</LegislativePoliticalActyInd>
+        <MoreThan100SpentInd>false</MoreThan100SpentInd>
+        <Form1120POLFiledInd>false</Form1120POLFiledInd>
+        <ActivitiesNotPreviouslyRptInd>false</ActivitiesNotPreviouslyRptInd>
+        <ChangesToArticlesOrBylawsInd>false</ChangesToArticlesOrBylawsInd>
+        <UnrelatedBusIncmOverLimitInd>false</UnrelatedBusIncmOverLimitInd>
+        <OrganizationDissolvedEtcInd>false</OrganizationDissolvedEtcInd>
+        <Section508eRqrSatisfiedInd>true</Section508eRqrSatisfiedInd>
+        <AtLeast5000InAssetsInd>true</AtLeast5000InAssetsInd>
+        <OrgReportOrRegisterStateCd>AZ</OrgReportOrRegisterStateCd>
+        <Form990PFFiledWithAttyGenInd>true</Form990PFFiledWithAttyGenInd>
+        <PrivateOperatingFoundationInd>false</PrivateOperatingFoundationInd>
+        <NewSubstantialContributorsInd>false</NewSubstantialContributorsInd>
+        <OwnControlledEntityInd>false</OwnControlledEntityInd>
+        <DonorAdvisedFundInd>false</DonorAdvisedFundInd>
+        <ComplyWithPublicInspRqrInd>true</ComplyWithPublicInspRqrInd>
+        <IndividualWithBooksNm>VAN HORN FOUNDATION</IndividualWithBooksNm>
+        <PhoneNum>6028611080</PhoneNum>
+        <LocationOfBooksUSAddress>
+          <AddressLine1Txt>1110 E MISSOURI AVE SUITE 200</AddressLine1Txt>
+          <CityNm>Phoenix</CityNm>
+          <StateAbbreviationCd>AZ</StateAbbreviationCd>
+          <ZIPCd>85014</ZIPCd>
+        </LocationOfBooksUSAddress>
+        <ForeignAccountsQuestionInd>false</ForeignAccountsQuestionInd>
+      </StatementsRegardingActyGrp>
+      <StatementsRegardingActy4720Grp>
+        <SaleOrExchDisqualifiedPrsnInd>false</SaleOrExchDisqualifiedPrsnInd>
+        <BrrwOrLendDisqualifiedPrsnInd>false</BrrwOrLendDisqualifiedPrsnInd>
+        <FurnGoodsDisqualifiedPrsnInd>false</FurnGoodsDisqualifiedPrsnInd>
+        <PayCompDisqualifiedPrsnInd>false</PayCompDisqualifiedPrsnInd>
+        <TransferAstDisqualifiedPrsnInd>false</TransferAstDisqualifiedPrsnInd>
+        <PaymentToGovernmentOfficialInd>false</PaymentToGovernmentOfficialInd>
+        <UncorrectedPriorActsInd>false</UncorrectedPriorActsInd>
+        <UndistributedIncomePYInd>false</UndistributedIncomePYInd>
+        <UndistrIncmSect4942a2NotAppInd>false</UndistrIncmSect4942a2NotAppInd>
+        <BusinessHoldingsInd>false</BusinessHoldingsInd>
+        <JeopardyInvestmentsInd>false</JeopardyInvestmentsInd>
+        <UncorrectedPYJeopardyInvstInd>false</UncorrectedPYJeopardyInvstInd>
+        <InfluenceLegislationInd>false</InfluenceLegislationInd>
+        <InfluenceElectionInd>false</InfluenceElectionInd>
+        <GrantsToIndividualsInd>false</GrantsToIndividualsInd>
+        <GrantsToOrganizationsInd>false</GrantsToOrganizationsInd>
+        <NoncharitablePurposeInd>false</NoncharitablePurposeInd>
+        <RcvFndsToPayPrsnlBnftCntrctInd>false</RcvFndsToPayPrsnlBnftCntrctInd>
+        <PayPremiumsPrsnlBnftCntrctInd>false</PayPremiumsPrsnlBnftCntrctInd>
+        <ProhibitedTaxShelterTransInd>false</ProhibitedTaxShelterTransInd>
+        <SubjToTaxRmnrtnExPrchtPymtInd>false</SubjToTaxRmnrtnExPrchtPymtInd>
+      </StatementsRegardingActy4720Grp>
+      <OfficerDirTrstKeyEmplInfoGrp>
+        <OfficerDirTrstKeyEmplGrp>
+          <PersonNm>DANIEL HAWORTH</PersonNm>
+          <USAddress>
+            <AddressLine1Txt>1110 E MISSOURI AVE STE 200</AddressLine1Txt>
+            <CityNm>Phoenix</CityNm>
+            <StateAbbreviationCd>AZ</StateAbbreviationCd>
+            <ZIPCd>85014</ZIPCd>
+          </USAddress>
+          <TitleTxt>PRESIDENT</TitleTxt>
+          <AverageHrsPerWkDevotedToPosRt>0.00</AverageHrsPerWkDevotedToPosRt>
+          <CompensationAmt>0</CompensationAmt>
+          <EmployeeBenefitProgramAmt>0</EmployeeBenefitProgramAmt>
+          <ExpenseAccountOtherAllwncAmt>0</ExpenseAccountOtherAllwncAmt>
+        </OfficerDirTrstKeyEmplGrp>
+        <OfficerDirTrstKeyEmplGrp>
+          <PersonNm>DONNA HAWORTH</PersonNm>
+          <USAddress>
+            <AddressLine1Txt>1110 E MISSOURI AVE STE 200</AddressLine1Txt>
+            <CityNm>Phoenix</CityNm>
+            <StateAbbreviationCd>AZ</StateAbbreviationCd>
+            <ZIPCd>85014</ZIPCd>
+          </USAddress>
+          <TitleTxt>SECRETARY</TitleTxt>
+          <AverageHrsPerWkDevotedToPosRt>0.00</AverageHrsPerWkDevotedToPosRt>
+          <CompensationAmt>0</CompensationAmt>
+          <EmployeeBenefitProgramAmt>0</EmployeeBenefitProgramAmt>
+          <ExpenseAccountOtherAllwncAmt>0</ExpenseAccountOtherAllwncAmt>
+        </OfficerDirTrstKeyEmplGrp>
+        <OfficerDirTrstKeyEmplGrp>
+          <PersonNm>WILLIAM BARR HAWORTH</PersonNm>
+          <USAddress>
+            <AddressLine1Txt>1110 E MISSOURI AVE STE 200</AddressLine1Txt>
+            <CityNm>Phoenix</CityNm>
+            <StateAbbreviationCd>AZ</StateAbbreviationCd>
+            <ZIPCd>85014</ZIPCd>
+          </USAddress>
+          <TitleTxt>VP TREASURER</TitleTxt>
+          <AverageHrsPerWkDevotedToPosRt>0.00</AverageHrsPerWkDevotedToPosRt>
+          <CompensationAmt>0</CompensationAmt>
+          <EmployeeBenefitProgramAmt>0</EmployeeBenefitProgramAmt>
+          <ExpenseAccountOtherAllwncAmt>0</ExpenseAccountOtherAllwncAmt>
+        </OfficerDirTrstKeyEmplGrp>
+        <CompOfHghstPdEmplOrNONETxt>NONE</CompOfHghstPdEmplOrNONETxt>
+        <OtherEmployeePaidOver50kCnt>0</OtherEmployeePaidOver50kCnt>
+        <CompOfHghstPdCntrctOrNONETxt>NONE</CompOfHghstPdCntrctOrNONETxt>
+      </OfficerDirTrstKeyEmplInfoGrp>
+      <SumOfProgramRelatedInvstGrp>
+        <TotalAmt>0</TotalAmt>
+      </SumOfProgramRelatedInvstGrp>
+      <MinimumInvestmentReturnGrp>
+        <AverageMonthlyFMVOfSecAmt>0</AverageMonthlyFMVOfSecAmt>
+        <AverageMonthlyCashBalancesAmt>715480</AverageMonthlyCashBalancesAmt>
+        <FMVAllOtherNoncharitableAstAmt>0</FMVAllOtherNoncharitableAstAmt>
+        <TotalFMVOfUnusedAssetsAmt>715480</TotalFMVOfUnusedAssetsAmt>
+        <ReductionClaimedAmt>0</ReductionClaimedAmt>
+        <AcquisitionIndebtednessAmt>0</AcquisitionIndebtednessAmt>
+        <AdjustedTotalFMVOfUnusedAstAmt>715480</AdjustedTotalFMVOfUnusedAstAmt>
+        <CashDeemedCharitableAmt>581147</CashDeemedCharitableAmt>
+        <NetVlNoncharitableAssetsAmt>134333</NetVlNoncharitableAssetsAmt>
+        <MinimumInvestmentReturnAmt>6717</MinimumInvestmentReturnAmt>
+      </MinimumInvestmentReturnGrp>
+      <DistributableAmountGrp>
+        <MinimumInvestmentReturnAmt>6717</MinimumInvestmentReturnAmt>
+        <TaxBasedOnInvestmentIncomeAmt>29</TaxBasedOnInvestmentIncomeAmt>
+        <TotalTaxAmt>29</TotalTaxAmt>
+        <DistributableBeforeAdjAmt>6688</DistributableBeforeAdjAmt>
+        <DistributableBeforeDedAmt>6688</DistributableBeforeDedAmt>
+        <DistributableAsAdjustedAmt>6688</DistributableAsAdjustedAmt>
+      </DistributableAmountGrp>
+      <PFQualifyingDistributionsGrp>
+        <ExpensesAndContributionsAmt>270000</ExpensesAndContributionsAmt>
+        <QualifyingDistributionsAmt>270000</QualifyingDistributionsAmt>
+      </PFQualifyingDistributionsGrp>
+      <UndistributedIncomeGrp>
+        <DistributableAsAdjustedAmt>6688</DistributableAsAdjustedAmt>
+        <ExcessDistributionCyovYr5Amt>62181</ExcessDistributionCyovYr5Amt>
+        <ExcessDistributionCyovYr4Amt>61814</ExcessDistributionCyovYr4Amt>
+        <ExcessDistributionCyovYr3Amt>58772</ExcessDistributionCyovYr3Amt>
+        <ExcessDistributionCyovYr2Amt>382564</ExcessDistributionCyovYr2Amt>
+        <TotalExcessDistributionCyovAmt>565331</TotalExcessDistributionCyovAmt>
+        <QualifyingDistributionsAmt>270000</QualifyingDistributionsAmt>
+        <AppliedToCurrentYearAmt>6688</AppliedToCurrentYearAmt>
+        <RemainingDistriFromCorpusAmt>263312</RemainingDistriFromCorpusAmt>
+        <TotalCorpusAmt>828643</TotalCorpusAmt>
+        <UndistributedIncomeCYAmt>0</UndistributedIncomeCYAmt>
+        <ExcessDistriCyovFromYr5Amt>62181</ExcessDistriCyovFromYr5Amt>
+        <ExcessDistriCyovToNextYrAmt>766462</ExcessDistriCyovToNextYrAmt>
+        <ExcessFromYear4Amt>61814</ExcessFromYear4Amt>
+        <ExcessFromYear3Amt>58772</ExcessFromYear3Amt>
+        <ExcessFromYear2Amt>382564</ExcessFromYear2Amt>
+        <ExcessFromCurrentYearAmt>263312</ExcessFromCurrentYearAmt>
+      </UndistributedIncomeGrp>
+      <SupplementaryInformationGrp>
+        <ContributingManagerNm>DANIEL HAWORTH</ContributingManagerNm>
+        <ApplicationSubmissionInfoGrp>
+          <RecipientPersonNm>DANIEL HAWORTH</RecipientPersonNm>
+          <RecipientUSAddress>
+            <AddressLine1Txt>1110 E MISSOURI AVE 200</AddressLine1Txt>
+            <CityNm>Phoenix</CityNm>
+            <StateAbbreviationCd>AZ</StateAbbreviationCd>
+            <ZIPCd>85014</ZIPCd>
+          </RecipientUSAddress>
+          <RecipientPhoneNum>6028611080</RecipientPhoneNum>
+          <FormAndInfoAndMaterialsTxt>SEE SCHEDULE 1</FormAndInfoAndMaterialsTxt>
+          <SubmissionDeadlinesTxt>NONE</SubmissionDeadlinesTxt>
+          <RestrictionsOnAwardsTxt>SEE SCHEDULE 1</RestrictionsOnAwardsTxt>
+        </ApplicationSubmissionInfoGrp>
+        <GrantOrContributionPdDurYrGrp>
+          <RecipientPersonNm>YOUNGLIFE</RecipientPersonNm>
+          <RecipientUSAddress>
+            <AddressLine1Txt>1130 E MISSOURI AVE</AddressLine1Txt>
+            <CityNm>Phoenix</CityNm>
+            <StateAbbreviationCd>AZ</StateAbbreviationCd>
+            <ZIPCd>85014</ZIPCd>
+          </RecipientUSAddress>
+          <RecipientFoundationStatusTxt>PC</RecipientFoundationStatusTxt>
+          <GrantOrContributionPurposeTxt>GENERAL SUPPORT</GrantOrContributionPurposeTxt>
+          <Amt>150000</Amt>
+        </GrantOrContributionPdDurYrGrp>
+        <GrantOrContributionPdDurYrGrp>
+          <RecipientPersonNm>CICERONIAN SOCIETY</RecipientPersonNm>
+          <RecipientUSAddress>
+            <AddressLine1Txt>430 E 8th St PMB 177</AddressLine1Txt>
+            <CityNm>Holland</CityNm>
+            <StateAbbreviationCd>MI</StateAbbreviationCd>
+            <ZIPCd>49423</ZIPCd>
+          </RecipientUSAddress>
+          <RecipientFoundationStatusTxt>PC</RecipientFoundationStatusTxt>
+          <GrantOrContributionPurposeTxt>GENERAL SUPPORT</GrantOrContributionPurposeTxt>
+          <Amt>20000</Amt>
+        </GrantOrContributionPdDurYrGrp>
+        <GrantOrContributionPdDurYrGrp>
+          <RecipientPersonNm>HOPE WOMENS CENTER</RecipientPersonNm>
+          <RecipientUSAddress>
+            <AddressLine1Txt>1640 E MCDOWELL RD</AddressLine1Txt>
+            <CityNm>Phoenix</CityNm>
+            <StateAbbreviationCd>AZ</StateAbbreviationCd>
+            <ZIPCd>85006</ZIPCd>
+          </RecipientUSAddress>
+          <RecipientFoundationStatusTxt>PC</RecipientFoundationStatusTxt>
+          <GrantOrContributionPurposeTxt>GENERAL SUPPORT</GrantOrContributionPurposeTxt>
+          <Amt>50000</Amt>
+        </GrantOrContributionPdDurYrGrp>
+        <GrantOrContributionPdDurYrGrp>
+          <RecipientPersonNm>DISCIPLE NATIONS</RecipientPersonNm>
+          <RecipientUSAddress>
+            <AddressLine1Txt>1110 E MISSOURI</AddressLine1Txt>
+            <CityNm>Phoenix</CityNm>
+            <StateAbbreviationCd>AZ</StateAbbreviationCd>
+            <ZIPCd>85014</ZIPCd>
+          </RecipientUSAddress>
+          <RecipientFoundationStatusTxt>PC</RecipientFoundationStatusTxt>
+          <GrantOrContributionPurposeTxt>GENERAL SUPPORT</GrantOrContributionPurposeTxt>
+          <Amt>10000</Amt>
+        </GrantOrContributionPdDurYrGrp>
+        <GrantOrContributionPdDurYrGrp>
+          <RecipientPersonNm>FREEDOM CHRISTIAN COUNSELING</RecipientPersonNm>
+          <RecipientUSAddress>
+            <AddressLine1Txt>17250 N 43rd Ave</AddressLine1Txt>
+            <CityNm>Glendale</CityNm>
+            <StateAbbreviationCd>AZ</StateAbbreviationCd>
+            <ZIPCd>85308</ZIPCd>
+          </RecipientUSAddress>
+          <RecipientFoundationStatusTxt>PC</RecipientFoundationStatusTxt>
+          <GrantOrContributionPurposeTxt>GENERAL SUPPORT</GrantOrContributionPurposeTxt>
+          <Amt>40000</Amt>
+        </GrantOrContributionPdDurYrGrp>
+        <TotalGrantOrContriPdDurYrAmt>270000</TotalGrantOrContriPdDurYrAmt>
+        <TotalGrantOrContriApprvFutAmt>0</TotalGrantOrContriApprvFutAmt>
+      </SupplementaryInformationGrp>
+      <AnalysisIncomeProducingActyGrp>
+        <IntOnSavAndTempCashInvstGrp>
+          <ExclusionCd>14</ExclusionCd>
+          <ExclusionAmt>2130</ExclusionAmt>
+        </IntOnSavAndTempCashInvstGrp>
+        <DividendsAndInterestFromSecDtl>
+          <ExclusionCd>14</ExclusionCd>
+        </DividendsAndInterestFromSecDtl>
+        <SubtotalsIncmProducingActyGrp>
+          <ExclusionAmt>2130</ExclusionAmt>
+        </SubtotalsIncmProducingActyGrp>
+        <TotalIncomeProducingActyAmt>2130</TotalIncomeProducingActyAmt>
+      </AnalysisIncomeProducingActyGrp>
+      <TrnsfrTransRlnNonchrtblEOGrp>
+        <TrnsfrOfCashToNonchrtblEOInd>false</TrnsfrOfCashToNonchrtblEOInd>
+        <TrnsfrOtherAssetNonchrtblEOInd>false</TrnsfrOtherAssetNonchrtblEOInd>
+        <SalesOrExchangesOfAssetsInd>false</SalesOrExchangesOfAssetsInd>
+        <PurchaseOfAssetsNonchrtblEOInd>false</PurchaseOfAssetsNonchrtblEOInd>
+        <RentalOfFacilitiesOthAssetsInd>false</RentalOfFacilitiesOthAssetsInd>
+        <ReimbursementArrangementsInd>false</ReimbursementArrangementsInd>
+        <LoansOrLoanGuaranteesInd>false</LoansOrLoanGuaranteesInd>
+        <PerformanceOfServicesEtcInd>false</PerformanceOfServicesEtcInd>
+        <SharingOfFacilitiesEtcInd>false</SharingOfFacilitiesEtcInd>
+        <RelationshipsNonchrtblEOInd>false</RelationshipsNonchrtblEOInd>
+      </TrnsfrTransRlnNonchrtblEOGrp>
+    </IRS990PF>
+    <OtherExpensesSchedule documentId="OtherExpensesSchedule">
+      <OtherExpensesScheduleGrp>
+        <Desc>MISC</Desc>
+        <RevenueAndExpensesPerBooksAmt>0</RevenueAndExpensesPerBooksAmt>
+        <NetInvestmentIncomeAmt>0</NetInvestmentIncomeAmt>
+        <AdjustedNetIncomeAmt>0</AdjustedNetIncomeAmt>
+        <DisbursementsCharitablePrpsAmt>0</DisbursementsCharitablePrpsAmt>
+      </OtherExpensesScheduleGrp>
+      <OtherExpensesScheduleGrp>
+        <Desc>BANK FEES</Desc>
+        <RevenueAndExpensesPerBooksAmt>60</RevenueAndExpensesPerBooksAmt>
+        <NetInvestmentIncomeAmt>60</NetInvestmentIncomeAmt>
+        <AdjustedNetIncomeAmt>0</AdjustedNetIncomeAmt>
+        <DisbursementsCharitablePrpsAmt>0</DisbursementsCharitablePrpsAmt>
+      </OtherExpensesScheduleGrp>
+      <OtherExpensesScheduleGrp>
+        <Desc>LICENSES</Desc>
+        <RevenueAndExpensesPerBooksAmt>237</RevenueAndExpensesPerBooksAmt>
+        <NetInvestmentIncomeAmt>0</NetInvestmentIncomeAmt>
+        <AdjustedNetIncomeAmt>0</AdjustedNetIncomeAmt>
+        <DisbursementsCharitablePrpsAmt>0</DisbursementsCharitablePrpsAmt>
+      </OtherExpensesScheduleGrp>
+    </OtherExpensesSchedule>
+    <TaxesSchedule documentId="TaxesSchedule">
+      <TaxesDetail>
+        <CategoryTxt>EXCISE TAX</CategoryTxt>
+        <Amt>29</Amt>
+        <NetInvestmentIncomeAmt>0</NetInvestmentIncomeAmt>
+        <AdjustedNetIncomeAmt>0</AdjustedNetIncomeAmt>
+        <DisbursementsCharitablePrpsAmt>0</DisbursementsCharitablePrpsAmt>
+      </TaxesDetail>
+    </TaxesSchedule>
+  </ReturnData>
+</Return>
