@@ -56,13 +56,27 @@ def derive(data_dir: str) -> dict:
                 quantile_cont(amount, 0.25)                     AS p25_grant,
                 quantile_cont(amount, 0.75)                     AS p75_grant,
                 avg(CASE WHEN recipient_is_person THEN 1.0 ELSE 0.0 END) AS individual_share,
-                count(DISTINCT recipient_state)                 AS states_funded,
-                mode(recipient_state)                           AS top_state,
-                avg(CASE WHEN recipient_state = (SELECT mode(recipient_state)
-                     FROM grants g2 WHERE g2.ein = g.ein) THEN 1.0 ELSE 0.0 END) AS top_state_share
+                count(DISTINCT recipient_state)                 AS states_funded
             FROM grants g
             WHERE amount IS NOT NULL
             GROUP BY ein
+        ),
+        -- Geographic concentration. Computed with a window rather than a
+        -- correlated subquery: the correlated form re-scans the grants table once
+        -- per foundation, which does not finish at corpus scale.
+        state_counts AS (
+            SELECT ein, recipient_state, count(*) AS n
+            FROM grants WHERE recipient_state IS NOT NULL
+            GROUP BY ein, recipient_state
+        ),
+        geo AS (
+            SELECT ein, recipient_state AS top_state, top_state_share
+            FROM (
+                SELECT ein, recipient_state,
+                       n::DOUBLE / sum(n) OVER (PARTITION BY ein) AS top_state_share,
+                       row_number() OVER (PARTITION BY ein ORDER BY n DESC) AS rn
+                FROM state_counts
+            ) WHERE rn = 1
         ),
         causes AS (
             SELECT ein,
@@ -87,10 +101,11 @@ def derive(data_dir: str) -> dict:
             s.first_year, s.last_year, s.years_filed,
             g.grant_count, g.grant_years, g.median_grant, g.min_grant, g.max_grant,
             g.total_granted, g.p25_grant, g.p75_grant,
-            g.individual_share, g.states_funded, g.top_state, g.top_state_share,
+            g.individual_share, g.states_funded, geo.top_state, geo.top_state_share,
             c.top_ntee, c.ntee_variety, c.ntee_coverage
         FROM foundation_latest l
         LEFT JOIN gstats      g ON g.ein = l.ein
+        LEFT JOIN geo           ON geo.ein = l.ein
         LEFT JOIN causes      c ON c.ein = l.ein
         LEFT JOIN filing_span s ON s.ein = l.ein
         """

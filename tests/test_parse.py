@@ -92,6 +92,36 @@ def test_name_normalization_keeps_distinct_orgs_distinct():
     assert normalize_name("American Red Cross") != normalize_name("American Cancer Society")
 
 
+def test_normalization_sql_matches_python():
+    """The SQL macro is the one that actually runs over the corpus; the Python
+    function is what the other tests pin down. They must not drift apart."""
+    import duckdb
+
+    from smallgrants.enrich import norm_name_sql
+
+    names = [
+        "The Smith Foundation, Inc.", "SMITH FOUNDATION INC", "St. Mary's Hospital",
+        "Saint Marys Hospital", "Boys & Girls Club", "Boys and Girls Club",
+        "Yale University", "AMERICAN RED CROSS", "Jones Charitable Trust",
+        "O'Brien Family Fund", "The  Doe   Foundation  Incorporated",
+        "Habitat for Humanity Intl., Inc.", "ACME CORP LLC", "Inc",
+        "Springfield Assn. of Educators", "New Haven Land Trust",
+    ]
+    con = duckdb.connect()
+    con.execute(f"CREATE MACRO norm_name(x) AS ({norm_name_sql('x')})")
+    rows = con.execute(
+        "SELECT n, norm_name(n) FROM (SELECT unnest(?) AS n)", [names]
+    ).fetchall()
+    con.close()
+
+    mismatches = [
+        (raw, sql_result, normalize_name(raw))
+        for raw, sql_result in rows
+        if sql_result != normalize_name(raw)
+    ]
+    assert not mismatches, f"SQL/Python divergence: {mismatches}"
+
+
 def test_size_fit_scoring():
     # Asking exactly the typical grant is a perfect fit.
     assert _size_fit(5000, 5000, 50000) == pytest.approx(1.0)

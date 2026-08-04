@@ -1,0 +1,87 @@
+{% extends "base.html" %}
+{% block content %}
+
+<form class="query" method="get" action="/">
+  <label class="field">
+    <span>What is the money for</span>
+    <textarea name="q" rows="2" placeholder="Air quality sensors for a student-run monitoring network in New Haven public schools">{{ q }}</textarea>
+  </label>
+  <div class="row">
+    <label class="field"><span>Your state</span>
+      <input type="text" name="state" value="{{ state }}" maxlength="2" placeholder="CT"></label>
+    <label class="field"><span>ZIP prefix</span>
+      <input type="text" name="zip3" value="{{ zip3 }}" maxlength="3" placeholder="065"></label>
+    <label class="field"><span>Amount sought</span>
+      <input type="number" name="amount" value="{{ amount }}" placeholder="3000" min="1"></label>
+    <label class="field"><span>Applying as</span>
+      <select name="applicant">
+        <option value="organization" {% if applicant == 'organization' %}selected{% endif %}>An organization</option>
+        <option value="individual" {% if applicant == 'individual' %}selected{% endif %}>An individual</option>
+      </select></label>
+  </div>
+  <div class="checks">
+    <label><input type="checkbox" name="include_closed" value="1" {% if include_closed %}checked{% endif %}>
+      Include foundations that filed that they accept no unsolicited requests</label>
+  </div>
+  <button type="submit">Find funders</button>
+</form>
+
+{% if error %}<p class="err">{{ error }}</p>{% endif %}
+
+{% if results %}
+  <p class="count">{{ results|length }} funders, ranked. Every one is shown with grants it actually paid.</p>
+  {% for r in results %}
+    <article class="rec" style="animation-delay: {{ loop.index0 * 28 }}ms">
+      <div class="rec-head">
+        <span class="rank">{{ "%02d"|format(loop.index) }}</span>
+        <div class="rec-name"><a href="/f/{{ r.ein }}">{{ r.name }}</a>
+          {% if r.declared_closed %}<span class="badge">no unsolicited requests</span>{% endif %}
+        </div>
+      </div>
+      <div class="rec-where">
+        {{ r.city or "—" }}, {{ r.state or "—" }}
+        &nbsp;·&nbsp; typical grant ${{ "{:,.0f}".format(r.median_grant or 0) }}
+        &nbsp;·&nbsp; largest ${{ "{:,.0f}".format(r.max_grant or 0) }}
+        &nbsp;·&nbsp; {{ r.grant_count }} grants on record
+        &nbsp;·&nbsp; last filed {{ r.last_year or "—" }}
+      </div>
+
+      {% if r.evidence %}
+      <div class="sched">
+        <div class="sched-cap">Grants paid — Form 990-PF, Part XV</div>
+        {% for e in r.evidence[:3] %}
+          <div class="line">
+            <span class="who">{{ e.recipient_name or "(unnamed recipient)" }}</span>
+            <span class="yr">{{ e.tax_year }}</span>
+            <span class="amt">${{ "{:,}".format(e.amount or 0) }}</span>
+            {% if e.purpose %}<span class="why">{{ e.purpose }}</span>{% endif %}
+          </div>
+        {% endfor %}
+      </div>
+      {% endif %}
+
+      <div class="signals">
+        cause {{ "%.2f"|format(r.components.cause) }} ·
+        geography {{ "%.2f"|format(r.components.geography) }} ·
+        size fit {{ "%.2f"|format(r.components.size) }} ·
+        {% if r.openness_ratio is not none %}
+          new grantees {{ "%.0f"|format(r.components.openness * 100) }}%
+        {% else %}new grantees unknown{% endif %}
+      </div>
+
+      {% if r.app_deadlines or r.app_restrictions or r.caveats %}
+      <ul class="notes">
+        {% if r.app_deadlines %}<li><b>Deadline:</b> {{ r.app_deadlines[:180] }}</li>{% endif %}
+        {% if r.app_restrictions %}<li><b>Restrictions:</b> {{ r.app_restrictions[:180] }}</li>{% endif %}
+        {% for c in r.caveats %}<li>{{ c }}</li>{% endfor %}
+      </ul>
+      {% endif %}
+    </article>
+  {% endfor %}
+{% elif q %}
+  <p class="count">No funders matched. Widen the geography, lower the amount, or
+    describe the work differently — most foundations state no purpose at all, so the
+    match runs on who they funded.</p>
+{% endif %}
+
+{% endblock %}

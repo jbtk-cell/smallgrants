@@ -1,0 +1,89 @@
+{% extends "base.html" %}
+{% block title %}{{ profile.name if profile else ein }} — SmallGrants{% endblock %}
+{% block content %}
+
+{% if not profile %}
+  <p class="err">No foundation with EIN {{ ein }} in the corpus.</p>
+{% else %}
+
+<h2>Foundation</h2>
+<p class="rec-name" style="font-size:1.4rem">{{ profile.name }}
+  {% if profile.declared_closed %}<span class="badge">no unsolicited requests</span>{% endif %}
+</p>
+
+<dl class="facts">
+  <dt>EIN</dt><dd>{{ ein }}</dd>
+  <dt>Location</dt><dd>{{ profile.city or "—" }}, {{ profile.state or "—" }}</dd>
+  <dt>Grants on record</dt><dd>{{ profile.grant_count or 0 }}</dd>
+  <dt>Typical grant</dt><dd>${{ "{:,.0f}".format(profile.median_grant or 0) }}</dd>
+  <dt>Range</dt><dd>${{ "{:,.0f}".format(profile.min_grant or 0) }} – ${{ "{:,.0f}".format(profile.max_grant or 0) }}</dd>
+  <dt>Total granted</dt><dd>${{ "{:,.0f}".format(profile.total_granted or 0) }}</dd>
+  <dt>Assets</dt><dd>{% if profile.total_assets_eoy %}${{ "{:,.0f}".format(profile.total_assets_eoy) }}{% else %}—{% endif %}</dd>
+  <dt>Funds mostly</dt><dd>{{ profile.top_state or "—" }}
+    {%- if profile.top_state_share %} ({{ "%.0f"|format(profile.top_state_share * 100) }}% of grants){% endif %}</dd>
+  <dt>Latest filing</dt><dd>{{ profile.last_year or "—" }}</dd>
+  <dt>New grantees</dt><dd>
+    {%- if profile.openness_ratio is not none %}{{ "%.0f"|format(profile.openness_ratio * 100) }}% each year
+    {%- else %}unknown — fewer than 3 years of grant history{% endif %}</dd>
+</dl>
+
+{% if profile.app_deadlines or profile.app_restrictions or profile.app_contact_name %}
+<h2>What it published about applying</h2>
+{% if profile.app_contact_name %}<p class="quote">Contact: {{ profile.app_contact_name }}</p>{% endif %}
+{% if profile.app_deadlines %}<p class="quote"><b>Deadline.</b> {{ profile.app_deadlines }}</p>{% endif %}
+{% if profile.app_restrictions %}<p class="quote"><b>Restrictions.</b> {{ profile.app_restrictions }}</p>{% endif %}
+{% endif %}
+
+<h2>Test your ask against the record</h2>
+<form method="post" action="/f/{{ ein }}">
+  <label class="field"><span>What you would ask them for</span>
+    <textarea name="project" rows="3" placeholder="Describe the project and the specific thing the money buys.">{{ ask.get('project','') }}</textarea></label>
+  <div class="row">
+    <label class="field"><span>Amount</span>
+      <input type="number" name="amount" value="{{ ask.get('amount') or '' }}" placeholder="3000" min="1"></label>
+    <label class="field"><span>Your state</span>
+      <input type="text" name="state" maxlength="2" value="{{ ask.get('state') or '' }}" placeholder="CT"></label>
+    <label class="field"><span>Applying as</span>
+      <select name="applicant_type">
+        <option value="organization" {% if ask.get('applicant_type') == 'organization' %}selected{% endif %}>An organization</option>
+        <option value="individual" {% if ask.get('applicant_type') == 'individual' %}selected{% endif %}>An individual</option>
+      </select></label>
+  </div>
+  <button type="submit">Find what's wrong with it</button>
+</form>
+
+{% if critique %}
+  <h2>Review</h2>
+  <p class="verdict {% if 'Do not send' in critique.verdict %}stop{% endif %}">{{ critique.verdict }}</p>
+  {% for f in critique.findings %}
+    <div class="finding">
+      <div class="sev {{ f.severity }}">{{ f.severity.replace('_',' ') }}</div>
+      <div>{{ f.claim }}</div>
+      <div class="ev">{{ f.evidence }}</div>
+    </div>
+  {% endfor %}
+  <p class="engine">
+    Reviewed by {{ critique.engine }}.
+    {% if critique.engine == 'rules' %}
+      Deterministic checks against the filing only. Set ANTHROPIC_API_KEY or run
+      `ant auth login` for a fuller adversarial review.
+    {% endif %}
+  </p>
+{% endif %}
+
+<h2>Grants paid — Form 990-PF, Part XV</h2>
+<div class="sched">
+  {% for g in profile.recent_grants %}
+    <div class="line">
+      <span class="who">{{ g.recipient or "(unnamed recipient)" }}{% if g.state %} · {{ g.state }}{% endif %}</span>
+      <span class="yr">{{ g.year }}</span>
+      <span class="amt">${{ "{:,}".format(g.amount or 0) }}</span>
+      {% if g.purpose %}<span class="why">{{ g.purpose }}</span>{% endif %}
+    </div>
+  {% else %}
+    <div class="line"><span class="who">No grant schedule in this foundation's filings.</span></div>
+  {% endfor %}
+</div>
+
+{% endif %}
+{% endblock %}

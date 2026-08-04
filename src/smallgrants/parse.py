@@ -187,14 +187,55 @@ def parse_return(xml_bytes: bytes, source: str = "") -> tuple[dict | None, list[
     return foundation, grants
 
 
+DEFLATE64 = 9
+_LOCAL_HEADER_SIG = 0x04034B50
+
+
+def _raw_member(fh, info) -> bytes:
+    """Read a member's compressed bytes directly, bypassing zipfile's codecs."""
+    import struct
+
+    fh.seek(info.header_offset)
+    (sig,) = struct.unpack("<I", fh.read(4))
+    if sig != _LOCAL_HEADER_SIG:
+        raise ValueError(f"bad local header for {info.filename}: {sig:#x}")
+    header = fh.read(26)
+    name_len, extra_len = struct.unpack("<HH", header[22:26])
+    fh.seek(info.header_offset + 30 + name_len + extra_len)
+    return fh.read(info.compress_size)
+
+
 def iter_archive(path: str) -> Iterator[tuple[str, bytes]]:
-    """Yield (member_name, xml_bytes) from a filings archive without extracting."""
+    """Yield (member_name, xml_bytes) from a filings archive without extracting.
+
+    Several IRS archives are compressed with deflate64, which Python's zipfile
+    cannot decode (and which libarchive misreports as a damaged archive). Those
+    members are decompressed directly. Skipping them would silently drop whole
+    months of filings -- five of the 49 archives are affected.
+    """
     import zipfile
 
     with zipfile.ZipFile(path) as zf:
-        for info in zf.infolist():
-            if info.filename.lower().endswith(".xml"):
-                yield info.filename, zf.read(info)
+        members = [i for i in zf.infolist() if i.filename.lower().endswith(".xml")]
+        needs_raw = any(i.compress_type == DEFLATE64 for i in members)
+        fh = open(path, "rb") if needs_raw else None
+        try:
+            for info in members:
+                if info.compress_type == DEFLATE64:
+                    import inflate64
+
+                    blob = inflate64.Inflater().inflate(_raw_member(fh, info))
+                    if len(blob) != info.file_size:
+                        raise ValueError(
+                            f"{info.filename}: inflated {len(blob)} bytes, "
+                            f"expected {info.file_size}"
+                        )
+                    yield info.filename, blob
+                else:
+                    yield info.filename, zf.read(info)
+        finally:
+            if fh is not None:
+                fh.close()
 
 
 def parse_archive(path: str) -> tuple[list[dict], list[dict], dict[str, Any]]:

@@ -1,0 +1,166 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>{% block title %}SmallGrants{% endblock %}</title>
+<style>
+:root {
+  --paper:   #F2F4EF;
+  --band:    #E3EBDF;
+  --band-2:  #EBF0E7;
+  --ink:     #1C2118;
+  --dim:     #5E6B58;
+  --rule:    #A8B8A0;
+  --hair:    #C6D2C0;
+  --flag:    #8C3A2B;
+  --flag-bg: #F6E7E3;
+  --mono: ui-monospace, SFMono-Regular, "SF Mono", Menlo, Consolas, monospace;
+  --prose: Charter, "Bitstream Charter", "Sitka Text", Cambria, Georgia, serif;
+}
+@media (prefers-color-scheme: dark) {
+  :root {
+    --paper: #14180F; --band: #1D2318; --band-2: #191E14;
+    --ink: #DDE4D6; --dim: #94A38B; --rule: #3C4735; --hair: #2C3527;
+    --flag: #D98170; --flag-bg: #2A1A16;
+  }
+}
+* { box-sizing: border-box; }
+body {
+  margin: 0; background: var(--paper); color: var(--ink);
+  font-family: var(--prose); font-size: 16px; line-height: 1.5;
+  -webkit-font-smoothing: antialiased;
+}
+.wrap { max-width: 68rem; margin: 0 auto; padding: 2rem 1.25rem 6rem; }
+a { color: inherit; }
+
+/* Masthead ---------------------------------------------------------- */
+.mast { border-bottom: 2px solid var(--ink); padding-bottom: .75rem; margin-bottom: 1.5rem; }
+.mast h1 {
+  font-family: var(--mono); font-size: clamp(1.5rem, 4vw, 2.1rem);
+  letter-spacing: -.055em; font-weight: 600; margin: 0; line-height: 1;
+}
+.mast h1 a { text-decoration: none; }
+.mast .tag { font-family: var(--mono); font-size: .74rem; color: var(--dim);
+  letter-spacing: .04em; margin-top: .5rem; }
+.mast .tag b { color: var(--ink); font-weight: 600; }
+
+/* Form -------------------------------------------------------------- */
+form.query { margin: 0 0 2rem; }
+.field { display: block; margin-bottom: .85rem; }
+.field > span {
+  display: block; font-family: var(--mono); font-size: .68rem;
+  text-transform: uppercase; letter-spacing: .11em; color: var(--dim);
+  margin-bottom: .3rem;
+}
+input[type=text], input[type=number], select, textarea {
+  width: 100%; font: inherit; padding: .5rem .6rem;
+  background: var(--paper); color: var(--ink);
+  border: 1px solid var(--rule); border-radius: 0;
+}
+textarea { font-family: var(--prose); resize: vertical; }
+input:focus, select:focus, textarea:focus, button:focus-visible {
+  outline: 2px solid var(--ink); outline-offset: 1px;
+}
+.row { display: grid; grid-template-columns: repeat(auto-fit, minmax(9rem, 1fr)); gap: .85rem; }
+.checks { font-family: var(--mono); font-size: .78rem; color: var(--dim); margin: .3rem 0 1rem; }
+button {
+  font-family: var(--mono); font-size: .8rem; letter-spacing: .06em;
+  text-transform: uppercase; padding: .6rem 1.4rem; border: 1px solid var(--ink);
+  background: var(--ink); color: var(--paper); cursor: pointer; border-radius: 0;
+}
+button:hover { background: transparent; color: var(--ink); }
+
+/* Results ----------------------------------------------------------- */
+.count { font-family: var(--mono); font-size: .74rem; color: var(--dim);
+  letter-spacing: .06em; margin-bottom: .75rem; }
+.rec { background: var(--band-2); padding: 1rem 1.1rem; margin-bottom: .4rem; }
+.rec:nth-child(even) { background: var(--band); }
+.rec-head { display: flex; gap: .85rem; align-items: baseline; }
+.rank { font-family: var(--mono); font-size: .82rem; color: var(--dim); min-width: 1.7rem; }
+.rec-name { font-size: 1.12rem; font-weight: 600; line-height: 1.25; }
+.rec-name a { text-decoration-thickness: 1px; text-underline-offset: 2px; }
+.rec-where { font-family: var(--mono); font-size: .72rem; color: var(--dim);
+  margin: .2rem 0 .55rem 2.55rem; letter-spacing: .03em; }
+
+/* Signature: the grant schedule strip -------------------------------- */
+.sched { margin: .55rem 0 .1rem 2.55rem; border-top: 1px solid var(--hair);
+  border-bottom: 1px solid var(--hair); padding: .35rem 0; }
+.sched-cap { font-family: var(--mono); font-size: .62rem; letter-spacing: .13em;
+  text-transform: uppercase; color: var(--dim); padding: .15rem 0 .3rem; }
+.line { display: grid; grid-template-columns: 1fr auto auto;
+  gap: .5rem 1rem; font-family: var(--mono); font-size: .76rem; padding: .12rem 0; }
+.line .who { overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.line .why { color: var(--dim); font-size: .7rem; }
+.line .yr { color: var(--dim); }
+.line .amt { text-align: right; font-variant-numeric: tabular-nums; min-width: 5.5rem; }
+
+.signals { font-family: var(--mono); font-size: .68rem; color: var(--dim);
+  margin: .5rem 0 0 2.55rem; letter-spacing: .04em; }
+.notes { margin: .45rem 0 0 2.55rem; font-size: .84rem; color: var(--dim); }
+.notes li { margin: .12rem 0; }
+.flag { color: var(--flag); }
+.badge { display: inline-block; font-family: var(--mono); font-size: .62rem;
+  letter-spacing: .1em; text-transform: uppercase; padding: .1rem .4rem;
+  background: var(--flag-bg); color: var(--flag); margin-left: .5rem; }
+
+/* Detail page -------------------------------------------------------- */
+h2 { font-family: var(--mono); font-size: .8rem; text-transform: uppercase;
+  letter-spacing: .12em; color: var(--dim); font-weight: 600;
+  border-bottom: 1px solid var(--rule); padding-bottom: .3rem; margin: 2.2rem 0 .8rem; }
+dl.facts { display: grid; grid-template-columns: max-content 1fr; gap: .25rem 1.2rem;
+  font-family: var(--mono); font-size: .8rem; margin: 0; }
+dl.facts dt { color: var(--dim); }
+dl.facts dd { margin: 0; font-variant-numeric: tabular-nums; }
+.quote { border-left: 2px solid var(--rule); padding-left: .8rem; color: var(--dim);
+  font-size: .9rem; margin: .5rem 0; }
+.verdict { font-size: 1.02rem; padding: .8rem 1rem; background: var(--band);
+  border-left: 3px solid var(--ink); margin: .8rem 0 1rem; }
+.verdict.stop { border-left-color: var(--flag); }
+.finding { padding: .55rem 0; border-bottom: 1px solid var(--hair); }
+.sev { font-family: var(--mono); font-size: .62rem; letter-spacing: .1em;
+  text-transform: uppercase; color: var(--dim); }
+.sev.disqualifying { color: var(--flag); }
+.ev { font-family: var(--mono); font-size: .74rem; color: var(--dim); margin-top: .2rem; }
+.engine { font-family: var(--mono); font-size: .68rem; color: var(--dim);
+  letter-spacing: .06em; margin-top: .8rem; }
+.err { background: var(--flag-bg); color: var(--flag); padding: .7rem .9rem;
+  font-family: var(--mono); font-size: .78rem; }
+footer { margin-top: 3rem; padding-top: 1rem; border-top: 1px solid var(--rule);
+  font-family: var(--mono); font-size: .68rem; color: var(--dim); line-height: 1.7; }
+
+@media (prefers-reduced-motion: no-preference) {
+  .rec { animation: rise .28s ease-out backwards; }
+  @keyframes rise { from { opacity: 0; transform: translateY(4px); } }
+}
+@media (max-width: 34rem) {
+  .rec-where, .sched, .signals, .notes { margin-left: 0; }
+  .line { grid-template-columns: 1fr auto; }
+  .line .why { grid-column: 1 / -1; }
+}
+</style>
+</head>
+<body>
+<div class="wrap">
+  <div class="mast">
+    <h1><a href="/">SmallGrants</a></h1>
+    <div class="tag">
+      {%- if summary and summary.get('foundations') -%}
+        <b>{{ "{:,}".format(summary.foundations) }}</b> private foundations &middot;
+        <b>{{ "{:,}".format(summary.grant_records) }}</b> grants on record &middot;
+        filing years {{ summary.year_range }} &middot;
+        median grant <b>${{ "{:,.0f}".format(summary.median_grant or 0) }}</b>
+      {%- else -%}
+        an open index of US foundation giving, built from IRS Form 990-PF filings
+      {%- endif -%}
+    </div>
+  </div>
+  {% block content %}{% endblock %}
+  <footer>
+    Built from IRS Form 990-PF bulk filings (apps.irs.gov). Foundations are shown as they
+    reported themselves to the IRS; filings lag the tax year, often by more than a year.<br>
+    Findings come from what a foundation filed, not from whether it will say yes.
+  </footer>
+</div>
+</body>
+</html>

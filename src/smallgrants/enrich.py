@@ -86,6 +86,31 @@ def normalize_name(raw: str | None) -> str | None:
     return s or None
 
 
+_SQL_SUFFIXES = "INCORPORATED|INC|CORPORATION|CORP|ORGANIZATION|ORG|LLC|LTD|CO"
+
+
+def norm_name_sql(col: str) -> str:
+    """The same transformation as normalize_name(), as a SQL expression.
+
+    Registering normalize_name as a Python UDF makes DuckDB call it once per row;
+    on the ~2M-row Business Master File that dominates the whole stage. Expressed
+    in SQL it runs vectorized. test_normalization_sql_matches_python keeps the two
+    implementations honest.
+    """
+    e = f"upper({col})"
+    e = f"regexp_replace({e}, '[''’`]', '', 'g')"      # apostrophes deleted, not spaced
+    e = f"replace({e}, '&', ' AND ')"
+    e = f"regexp_replace({e}, '[^A-Z0-9 ]+', ' ', 'g')"
+    e = f"trim(regexp_replace({e}, ' +', ' ', 'g'))"
+    e = f"regexp_replace({e}, '^THE ', '')"
+    for pattern, repl in _ABBREV:
+        word = pattern.replace(r"\b", "")
+        e = f"regexp_replace({e}, '\\b{word}\\b', '{repl}', 'g')"
+    e = f"regexp_replace({e}, '( ({_SQL_SUFFIXES}))+$', '')"
+    e = f"regexp_replace({e}, '^({_SQL_SUFFIXES})$', '')"
+    return f"nullif({e}, '')"
+
+
 def download_bmf(data_dir: str) -> list[str]:
     """Fetch the four regional Exempt Organization Business Master File extracts."""
     dest = os.path.join(data_dir, "bmf")
@@ -114,9 +139,7 @@ def enrich(data_dir: str, skip_download: bool = False) -> dict:
     bmf_glob = os.path.join(data_dir, "bmf", "eo*.csv")
 
     con = connect(data_dir)
-    con.create_function(
-        "norm_name", normalize_name, ["VARCHAR"], "VARCHAR", null_handling="special"
-    )
+    con.execute(f"CREATE OR REPLACE MACRO norm_name(x) AS ({norm_name_sql('x')})")
 
     con.execute("DROP TABLE IF EXISTS bmf")
     con.execute(
