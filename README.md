@@ -19,7 +19,7 @@ Built and measured on 2026-08-04 from all 49 IRS bulk archives, filing years
 2022–2026:
 
 - **562,413** Form 990-PF filings
-- **142,806** foundations, **8,483,757** grant records
+- **142,806** foundations, **8,388,280** grant records
 - Median grant **$5,000**; **55.6% of all grants are $5,000 or less**
 - **70.3%** of foundations filed that they accept no unsolicited requests
 - 68.8% of purpose descriptions carry usable information
@@ -60,10 +60,19 @@ smallgrants serve                       # http://127.0.0.1:8000
 The openness ratio — the share of grantees new each year — was the design's most
 novel signal. Tested against the 70% of foundations that declare their own
 status, it holds in the right direction and is overwhelmingly significant
-(n=84,328, Welch t=43.9) but the effect is small (Cohen's d=0.355): foundations
+(n=77,605, Welch t=33.6) but the effect is small (Cohen's d=0.286): foundations
 that state they accept no unsolicited requests still replace a third of their
 grantees annually. It was demoted from 0.10 to 0.05 weight and is labelled a weak
 signal wherever it appears, rather than quietly shipped as if it were decisive.
+
+Three adversarial reviewers then went at the code. They found, among others, a
+critic that discarded its own record-derived disqualifiers in favour of whatever
+the model returned; an individuals check that read "NO GRANTS TO INDIVIDUALS" as
+evidence *of* grants to individuals (53% false positives); a geography score that
+rewarded funders for being concentrated somewhere other than the user's state;
+and roughly $6.7B of grant dollars double-counted because grant rows carried no
+filing identity. All are fixed and pinned by regression tests. The full list,
+including what the reviewers cleared with proof, is in `docs/validation.md`.
 
 ## Deliberate non-goals
 
