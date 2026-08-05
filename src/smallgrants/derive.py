@@ -25,6 +25,12 @@ def derive(data_dir: str) -> dict:
         SELECT *, COALESCE(recipient_ein, recipient_norm) AS grantee_key
         FROM grants
         WHERE COALESCE(recipient_ein, recipient_norm) IS NOT NULL
+          -- Organizations only. Counting individuals made openness a scholarship
+          -- detector: a fund paying a fresh cohort of students each year scores
+          -- near 1.0, and the top 500 by openness averaged 65% individual grants
+          -- against a corpus average of 19% -- the opposite of "an organization
+          -- can apply here", which is the question the signal exists to answer.
+          AND NOT is_individual
         """
     )
 
@@ -49,16 +55,15 @@ def derive(data_dir: str) -> dict:
                 ein,
                 count(*)                                        AS grant_count,
                 count(DISTINCT tax_year)                        AS grant_years,
-                median(amount)                                  AS median_grant,
+                median(amount) FILTER (WHERE amount IS NOT NULL)                                  AS median_grant,
                 min(amount)                                     AS min_grant,
                 max(amount)                                     AS max_grant,
                 sum(amount)                                     AS total_granted,
-                quantile_cont(amount, 0.25)                     AS p25_grant,
-                quantile_cont(amount, 0.75)                     AS p75_grant,
-                avg(CASE WHEN recipient_is_person THEN 1.0 ELSE 0.0 END) AS individual_share,
+                quantile_cont(amount, 0.25) FILTER (WHERE amount IS NOT NULL)                     AS p25_grant,
+                quantile_cont(amount, 0.75) FILTER (WHERE amount IS NOT NULL)                     AS p75_grant,
+                avg(CASE WHEN is_individual THEN 1.0 ELSE 0.0 END) AS individual_share,
                 count(DISTINCT recipient_state)                 AS states_funded
             FROM grants g
-            WHERE amount IS NOT NULL
             GROUP BY ein
         ),
         -- Geographic concentration. Computed with a window rather than a

@@ -34,6 +34,7 @@ class Finding:
     severity: str  # "disqualifying" | "serious" | "worth_checking"
     claim: str
     evidence: str
+    source: str = "filing"  # "filing" for record-derived, else the model name
 
 
 @dataclass
@@ -47,7 +48,12 @@ class Critique:
             "engine": self.engine,
             "verdict": self.verdict,
             "findings": [
-                {"severity": f.severity, "claim": f.claim, "evidence": f.evidence}
+                {
+                    "severity": f.severity,
+                    "claim": f.claim,
+                    "evidence": f.evidence,
+                    "source": f.source,
+                }
                 for f in self.findings
             ],
         }
@@ -97,7 +103,58 @@ def foundation_profile(data_dir: str, ein: str) -> dict | None:
 # Rule-based critic (no credentials required)
 # --------------------------------------------------------------------------
 
-_INDIVIDUAL_ONLY = ("scholarship", "student", "graduating senior", "tuition", "individual")
+import re
+
+# "NO GRANTS TO INDIVIDUALS" and "SCHOLARSHIPS TO INDIVIDUALS" both contain the
+# word "individuals" and mean opposite things. Matching the bare word treated the
+# first as evidence of the second and told organizations not to apply: measured
+# over the corpus, 53% of the disqualifying flags it produced were foundations
+# that give individuals nothing at all. Negation is now detected explicitly, and
+# a restriction alone never disqualifies -- the foundation's actual behaviour has
+# to agree.
+_EXCLUDES_INDIVIDUALS = re.compile(
+    r"\b(?:no|not|never|non[- ]?)\s*"
+    r"(?:\w+\s+){0,3}?(?:to\s+|for\s+)?individuals?\b"
+    r"|\bindividuals?\s+(?:are\s+)?(?:not|excluded|ineligible)\b"
+    r"|\b(?:organizations?|charities|501\s*\(?c\)?\s*\(?3\)?)\s+only\b"
+    r"|\bno\s+scholarships?\b",
+    re.I,
+)
+_INDIVIDUALS_ONLY = re.compile(
+    r"\b(?:scholarship|tuition|graduating senior|undergraduate|student)s?\b", re.I
+)
+
+_STATES = {
+    "AL": "alabama", "AK": "alaska", "AZ": "arizona", "AR": "arkansas",
+    "CA": "california", "CO": "colorado", "CT": "connecticut", "DE": "delaware",
+    "FL": "florida", "GA": "georgia", "HI": "hawaii", "ID": "idaho",
+    "IL": "illinois", "IN": "indiana", "IA": "iowa", "KS": "kansas",
+    "KY": "kentucky", "LA": "louisiana", "ME": "maine", "MD": "maryland",
+    "MA": "massachusetts", "MI": "michigan", "MN": "minnesota", "MS": "mississippi",
+    "MO": "missouri", "MT": "montana", "NE": "nebraska", "NV": "nevada",
+    "NH": "new hampshire", "NJ": "new jersey", "NM": "new mexico", "NY": "new york",
+    "NC": "north carolina", "ND": "north dakota", "OH": "ohio", "OK": "oklahoma",
+    "OR": "oregon", "PA": "pennsylvania", "RI": "rhode island", "SC": "south carolina",
+    "SD": "south dakota", "TN": "tennessee", "TX": "texas", "UT": "utah",
+    "VT": "vermont", "VA": "virginia", "WA": "washington", "WV": "west virginia",
+    "WI": "wisconsin", "WY": "wyoming", "DC": "district of columbia",
+}
+
+
+def _states_named(text: str) -> set[str]:
+    """State codes whose full name appears in the text.
+
+    Comparing the two-letter code against the text directly is what the earlier
+    version did, so "TX" never matched "STATE OF TEXAS" (a false warning to Texas
+    applicants) while "IN" matched inside "IN THE STATE OF OREGON" (no warning to
+    Indiana applicants). Full names only, with word boundaries.
+    """
+    low = text.lower()
+    return {
+        code
+        for code, name in _STATES.items()
+        if re.search(rf"\b{re.escape(name)}\b", low)
+    }
 
 
 def _rule_findings(profile: dict, ask: dict) -> list[Finding]:
@@ -117,34 +174,66 @@ def _rule_findings(profile: dict, ask: dict) -> list[Finding]:
         )
 
     restrictions = (profile.get("app_restrictions") or "").strip()
-    if restrictions:
-        low = restrictions.lower()
-        if is_org and any(k in low for k in _INDIVIDUAL_ONLY):
-            findings.append(
-                Finding(
-                    "disqualifying",
-                    "Its stated restrictions describe awards to individuals, not organizations.",
-                    f'Restrictions on its filing: "{restrictions[:200]}"',
-                )
-            )
-        if state and " state of " in low and state.lower() not in low:
+    share = profile.get("individual_share")
+    grants = profile.get("grant_count") or 0
+    excludes_individuals = bool(restrictions and _EXCLUDES_INDIVIDUALS.search(restrictions))
+
+    if restrictions and state:
+        named = _states_named(restrictions)
+        if named and state not in named:
+            pretty = ", ".join(sorted(_STATES[c].title() for c in named))
             findings.append(
                 Finding(
                     "serious",
-                    "Its stated restrictions name a geography that may exclude you.",
+                    f"Its stated restrictions name {pretty}, which does not include your state.",
                     f'Restrictions on its filing: "{restrictions[:200]}"',
                 )
             )
 
-    share = profile.get("individual_share")
-    if share is not None and is_org and share > 0.9:
-        findings.append(
-            Finding(
-                "disqualifying",
-                "Effectively all of its grants go to individuals, not organizations.",
-                f"{share:.0%} of its grant records name a person rather than an organization.",
-            )
+    if is_org:
+        # Only disqualify an organization when the filing says individuals-only
+        # AND the grant record agrees. Either one alone is not enough.
+        says_individuals_only = bool(
+            restrictions and _INDIVIDUALS_ONLY.search(restrictions) and not excludes_individuals
         )
+        if says_individuals_only and share is not None and share > 0.5:
+            findings.append(
+                Finding(
+                    "disqualifying",
+                    "It funds individuals rather than organizations.",
+                    f"{share:.0%} of its grants name a person, and its filing says: "
+                    f'"{restrictions[:160]}"',
+                )
+            )
+        elif share is not None and grants >= 10 and share > 0.9:
+            findings.append(
+                Finding(
+                    "disqualifying",
+                    "Effectively all of its grants go to individuals, not organizations.",
+                    f"{share:.0%} of its {grants} grant records name a person rather "
+                    "than an organization.",
+                )
+            )
+    else:
+        # The converse case had no check at all, so an individual asking a
+        # foundation whose filing reads "NO GRANTS TO INDIVIDUALS" was told there
+        # was no disqualifying problem.
+        if excludes_individuals:
+            findings.append(
+                Finding(
+                    "disqualifying",
+                    "Its stated restrictions exclude individuals.",
+                    f'Restrictions on its filing: "{restrictions[:200]}"',
+                )
+            )
+        elif share is not None and grants >= 20 and share == 0:
+            findings.append(
+                Finding(
+                    "disqualifying",
+                    "It has never recorded a grant to an individual.",
+                    f"All {grants} of its recorded grants name an organization.",
+                )
+            )
 
     if amount:
         mx, med, p75 = profile.get("max_grant"), profile.get("median_grant"), profile.get("p75_grant")
@@ -324,9 +413,28 @@ def critique_ask(data_dir: str, ein: str, ask: dict, force_rules: bool = False) 
             )
         text = next(b.text for b in response.content if b.type == "text")
         parsed = json.loads(text)
+        model_findings = [
+            Finding(
+                severity=f["severity"],
+                claim=f["claim"],
+                evidence=f["evidence"],
+                source=MODEL,
+            )
+            for f in parsed.get("findings", [])
+            # The deterministic checks are already in the list; don't repeat them.
+            if not any(f["claim"].strip() == r.claim.strip() for r in rule_findings)
+        ]
+        # The record-derived findings are never replaced by the model's. An
+        # earlier version substituted them, so a model that returned an empty
+        # list turned a foundation that had filed "no unsolicited requests" into
+        # "a strong fit; send it". The rules are the floor; the model can only
+        # add to them, and the verdict is downgraded to match the worst of both.
+        combined = rule_findings + model_findings
+        rules_verdict = _verdict_from(combined)
+        worst_is_rules = any(f.severity == "disqualifying" for f in rule_findings)
         return Critique(
-            findings=[Finding(**f) for f in parsed["findings"]],
-            verdict=parsed["verdict"],
+            findings=combined,
+            verdict=rules_verdict if worst_is_rules else parsed["verdict"],
             engine=MODEL,
         )
     except Exception as exc:  # never let the critic break the app

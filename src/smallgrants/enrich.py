@@ -170,15 +170,6 @@ def enrich(data_dir: str, skip_download: bool = False) -> dict:
         GROUP BY name_norm, state HAVING count(DISTINCT ein) = 1
         """
     )
-    con.execute("DROP TABLE IF EXISTS bmf_natl_unique")
-    con.execute(
-        """
-        CREATE TABLE bmf_natl_unique AS
-        SELECT name_norm, any_value(ein) AS ein, any_value(ntee) AS ntee
-        FROM bmf WHERE name_norm IS NOT NULL
-        GROUP BY name_norm HAVING count(DISTINCT ein) = 1
-        """
-    )
 
     con.execute("DROP TABLE IF EXISTS grants")
     con.execute(
@@ -190,29 +181,34 @@ def enrich(data_dir: str, skip_download: bool = False) -> dict:
         )
         SELECT
             b.*,
-            COALESCE(s.ein, n.ein)              AS recipient_ein,
-            COALESCE(s.ntee, n.ntee)            AS recipient_ntee,
-            upper(substr(COALESCE(s.ntee, n.ntee), 1, 1)) AS ntee_major,
+            s.ein                                  AS recipient_ein,
+            s.ntee                                 AS recipient_ntee,
+            upper(substr(s.ntee, 1, 1))            AS ntee_major,
+            -- A filer that typed an organization into RecipientPersonNm is
+            -- identified by the name matching a real exempt organization in the
+            -- same state; those rows are organizations, not individuals.
             CASE
-                WHEN b.recipient_is_person   THEN 'individual'
-                WHEN s.ein IS NOT NULL       THEN 'name_state'
-                WHEN n.ein IS NOT NULL       THEN 'name_national'
+                WHEN s.ein IS NOT NULL AND b.recipient_is_person THEN 'person_field_org'
+                WHEN s.ein IS NOT NULL                           THEN 'name_state'
+                WHEN b.recipient_is_person                       THEN 'individual'
                 ELSE 'unresolved'
-            END                                 AS resolution_tier
+            END                                    AS resolution_tier,
+            CASE WHEN s.ein IS NOT NULL THEN FALSE ELSE b.recipient_is_person END
+                                                   AS is_individual
         FROM base b
         LEFT JOIN bmf_state_unique s
                ON b.recipient_norm = s.name_norm AND b.recipient_state = s.state
-        LEFT JOIN bmf_natl_unique n
-               ON b.recipient_norm = n.name_norm
         """
-        # Both joins are plain equi-joins so DuckDB can hash them. An earlier
-        # version put "AND s.ein IS NULL" in the second ON clause to express
-        # "only fall back nationally"; because that references the first join's
-        # output it cannot be hashed, and the planner fell back to a nested loop
-        # that never finished. Precedence is expressed by COALESCE instead --
-        # the state match wins wherever it exists, which is the same semantics.
+        # The national-name fallback was removed. It supplied 3.3% of matches and
+        # 97.6% of them attached an organization whose BMF state differed from the
+        # recipient's own address, because the large national charity is filed
+        # under a decorated name while a small unrelated org holds the bare one:
+        # "PLANNED PARENTHOOD" resolved to a single San Antonio organization
+        # across 5,175 grants and $64M in 46 states. Global name uniqueness turned
+        # out to be evidence of obscurity, not of identity.
     )
 
+    bmf_rows = con.execute("SELECT count(*) FROM bmf").fetchone()[0]
     total = con.execute("SELECT count(*) FROM grants").fetchone()[0]
     tiers = dict(
         con.execute(
@@ -227,7 +223,7 @@ def enrich(data_dir: str, skip_download: bool = False) -> dict:
 
     return {
         "grant_records": total,
-        "bmf_rows": None,
+        "bmf_rows": bmf_rows,
         **{f"tier_{k}": v for k, v in tiers.items()},
         "org_grants": org_grants,
         "resolved_pct_of_org_grants": (

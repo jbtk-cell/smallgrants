@@ -41,33 +41,93 @@ def load_staging(data_dir: str) -> dict[str, int]:
         raise FileNotFoundError(f"no staging parquet in {staging}; run ingest first")
 
     con = connect(data_dir)
+
+    # A filing needs an identity, or the grant rows of a foundation's two filings
+    # for one tax year pool together and its grant dollars double. Newer parses
+    # carry the IRS object_id; archives staged before that fall back to the
+    # staging file they came from, which is one archive per file.
+    cols = {
+        c[0]
+        for c in con.execute(
+            f"DESCRIBE SELECT * FROM read_parquet('{fglob}', union_by_name=true)"
+        ).fetchall()
+    }
+    has_oid = "object_id" in cols
+    fkey = "object_id" if has_oid else "regexp_extract(filename, '[^/]+$')"
+    # Prefer an amended return, then the newest, then the fullest schedule. The
+    # last term makes the choice deterministic: 81% of duplicate pairs tie on
+    # grant_count, and without a tiebreak DuckDB picked arbitrarily, so declared
+    # status and assets changed between rebuilds.
+    order = []
+    if "amended" in cols:
+        order.append("amended DESC")
+    if "return_ts" in cols:
+        order.append("return_ts DESC NULLS LAST")
+    order += ["grant_count DESC", "filing_key DESC"]
+
     con.execute("DROP TABLE IF EXISTS filings")
     con.execute(
         f"""
         CREATE TABLE filings AS
-        SELECT * FROM (
+        SELECT * EXCLUDE (_rn) FROM (
             SELECT *, row_number() OVER (
-                PARTITION BY ein, tax_year ORDER BY grant_count DESC
+                PARTITION BY ein, tax_year ORDER BY {', '.join(order)}
             ) AS _rn
-            FROM read_parquet('{fglob}', union_by_name=true)
+            FROM (
+                SELECT * EXCLUDE (filename), {fkey} AS filing_key
+                FROM read_parquet('{fglob}', union_by_name=true, filename=true)
+            )
         ) WHERE _rn = 1
         """
     )
-    con.execute("ALTER TABLE filings DROP COLUMN _rn")
 
     con.execute("DROP TABLE IF EXISTS grants_raw")
     if glob.glob(gglob):
+        gkey = "object_id" if has_oid else "replace(regexp_extract(filename, '[^/]+$'), '.grants.', '.foundations.')"
         con.execute(
-            f"CREATE TABLE grants_raw AS SELECT * FROM read_parquet('{gglob}', union_by_name=true)"
+            f"""
+            CREATE TABLE grants_raw AS
+            SELECT * EXCLUDE (filename), {gkey} AS filing_key
+            FROM read_parquet('{gglob}', union_by_name=true, filename=true)
+            """
         )
     else:
-        con.execute("CREATE TABLE grants_raw (ein VARCHAR, tax_year INTEGER)")
+        con.execute("CREATE TABLE grants_raw (ein VARCHAR, tax_year INTEGER, filing_key VARCHAR)")
 
-    # Drop grants belonging to filings that lost the dedup above.
+    # Keep only the grants belonging to the filing that won.
     con.execute(
         """
-        DELETE FROM grants_raw
-        WHERE (ein, tax_year) NOT IN (SELECT ein, tax_year FROM filings)
+        DELETE FROM grants_raw g
+        WHERE NOT EXISTS (
+            SELECT 1 FROM filings f
+            WHERE f.ein = g.ein AND f.tax_year = g.tax_year
+              AND f.filing_key = g.filing_key
+        )
+        """
+    )
+
+    # Residual: two filings inside one archive share a filing_key when object_id
+    # is unavailable. Only for pairs that still carry more rows than the winning
+    # filing declared, collapse exact duplicate rows -- bounded so that a
+    # foundation legitimately making two identical grants keeps both.
+    con.execute(
+        """
+        CREATE OR REPLACE TEMP TABLE _over AS
+        SELECT g.ein, g.tax_year
+        FROM grants_raw g JOIN filings f USING (ein, tax_year)
+        GROUP BY g.ein, g.tax_year, f.grant_count
+        HAVING count(*) > f.grant_count
+        """
+    )
+    gcols = [c[0] for c in con.execute("DESCRIBE grants_raw").fetchall()]
+    con.execute(
+        f"""
+        CREATE OR REPLACE TABLE grants_raw AS
+        SELECT * EXCLUDE (_dup) FROM (
+            SELECT g.*, CASE WHEN o.ein IS NULL THEN 1 ELSE
+                row_number() OVER (PARTITION BY {', '.join('g.' + c for c in gcols)}) END AS _dup
+            FROM grants_raw g LEFT JOIN _over o USING (ein, tax_year)
+        ) WHERE _dup = 1
         """
     )
 

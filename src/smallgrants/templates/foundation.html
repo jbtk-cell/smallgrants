@@ -72,7 +72,11 @@
   <p class="verdict {% if 'Do not send' in critique.verdict %}stop{% endif %}">{{ critique.verdict }}</p>
   {% for f in critique.findings %}
     <div class="finding">
-      <div class="sev {{ f.severity }}">{{ f.severity.replace('_',' ') }}</div>
+      <div class="sev {{ f.severity }}">{{ f.severity.replace('_',' ') }}
+        <span style="color:var(--dim)">·
+          {%- if f.source == 'filing' %} from the filing
+          {%- else %} inferred by {{ f.source }}{% endif %}</span>
+      </div>
       <div>{{ f.claim }}</div>
       <div class="ev">{{ f.evidence }}</div>
     </div>

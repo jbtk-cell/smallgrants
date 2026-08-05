@@ -87,7 +87,20 @@ def _recipient_name(block: ET.Element) -> tuple[str | None, bool]:
     return None, False
 
 
-def parse_return(xml_bytes: bytes, source: str = "") -> tuple[dict | None, list[dict]]:
+def object_id_of(member_name: str) -> str:
+    """The IRS object ID, which is the archive member's own filename.
+
+    This is the only per-filing identifier available, and without it a
+    foundation's two filings for one tax year are indistinguishable once their
+    grant rows are pooled -- which silently doubles their grant dollars.
+    """
+    base = member_name.rsplit("/", 1)[-1]
+    return base.replace("_public.xml", "").replace(".xml", "")
+
+
+def parse_return(
+    xml_bytes: bytes, source: str = "", object_id: str = ""
+) -> tuple[dict | None, list[dict]]:
     """Parse one filing. Returns (foundation, grants); (None, []) if not a 990-PF."""
     try:
         root = ET.fromstring(xml_bytes)
@@ -129,6 +142,10 @@ def parse_return(xml_bytes: bytes, source: str = "") -> tuple[dict | None, list[
     foundation = {
         "ein": ein.zfill(9),
         "tax_year": tax_year,
+        "object_id": object_id,
+        # An amended return supersedes the original for the same tax year.
+        "amended": bool_of(header, "AmendedReturnInd") is True,
+        "return_ts": text_of(header, "ReturnTs"),
         "period_end": period_end,
         "name": " ".join(p for p in (line1, line2) if p),
         "in_care_of": text_of(filer, "InCareOfNm"),
@@ -145,7 +162,6 @@ def parse_return(xml_bytes: bytes, source: str = "") -> tuple[dict | None, list[
         # Part XV line 2: checked when the foundation only funds preselected
         # organizations and accepts no unsolicited requests. Absence means the
         # box was not checked, which is weaker than an affirmative "we are open".
-        "only_preselected": bool_of(pf, "OnlyContriToPreselectedInd") is True,
         "declared_closed": bool_of(pf, "OnlyContriToPreselectedInd") is True,
         # Application instructions the foundation chose to publish.
         "app_contact_name": text_of(app_info, "RecipientPersonNm")
@@ -171,6 +187,7 @@ def parse_return(xml_bytes: bytes, source: str = "") -> tuple[dict | None, list[
             {
                 "ein": foundation["ein"],
                 "tax_year": tax_year,
+                "object_id": object_id,
                 "recipient_name": recipient,
                 "recipient_is_person": is_person,
                 "recipient_city": raddr["city"],
@@ -246,9 +263,9 @@ def parse_archive(path: str) -> tuple[list[dict], list[dict], dict[str, Any]]:
     foundations: list[dict] = []
     grants: list[dict] = []
     total = 0
-    for _, blob in iter_archive(path):
+    for member, blob in iter_archive(path):
         total += 1
-        foundation, rows = parse_return(blob, source)
+        foundation, rows = parse_return(blob, source, object_id_of(member))
         if foundation is None:
             continue
         foundations.append(foundation)

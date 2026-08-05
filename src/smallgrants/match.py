@@ -150,14 +150,43 @@ def _size_fit(amount: int | None, median: float | None, mx: float | None) -> flo
     return max(0.0, 1.0 - abs(math.log10(amount / median)) / 1.5)
 
 
-def _geo_score(user_state, user_zip3, top_state, state_share, zip3_hits, state_hits) -> float:
-    if user_state is None:
-        return 0.5
+def _geo_score(user_state, user_zip3, state_hits, zip3_hits, grant_count) -> float:
+    """How much of this foundation's giving lands in the user's geography.
+
+    Scored on the share of the foundation's own grants that went to the user's
+    state, not on how concentrated it is in its own top state. An earlier version
+    used the latter, which rewarded funders for being concentrated somewhere else:
+    a foundation with 1 New York grant out of 162 (91% Tennessee) outscored one
+    with 34 of 45 in New York.
+    """
+    if not user_state and not user_zip3:
+        return 0.5  # no geography supplied; neutral rather than penalised
+    if not grant_count:
+        return 0.0
+    state_hits, zip3_hits = state_hits or 0, zip3_hits or 0
+    if user_state and not state_hits:
+        return 0.0
+    if not user_state and not zip3_hits:
+        return 0.0
+    score = 0.35 + 0.45 * min(state_hits / grant_count, 1.0)
     if zip3_hits:
-        return 1.0
-    if state_hits:
-        return 0.65 + 0.25 * min(state_share or 0.0, 1.0)
-    return 0.0
+        score += 0.20 * min((zip3_hits / grant_count) * 3, 1.0)
+    return min(score, 1.0)
+
+
+# Openness is a weak signal (Cohen's d 0.355 against declared status; see
+# docs/validation.md), so it is normalised gently and an unknown value scores
+# below the corpus median rather than at the top. An earlier version mapped
+# unknown to 0.5 and then doubled it, handing the 17% of foundations with no
+# openness data the maximum possible sub-score.
+OPENNESS_FULL_CREDIT = 0.60
+OPENNESS_UNKNOWN = 0.35
+
+
+def _openness_score(ratio: float | None) -> float:
+    if ratio is None:
+        return OPENNESS_UNKNOWN
+    return min(ratio / OPENNESS_FULL_CREDIT, 1.0)
 
 
 def search(
@@ -204,6 +233,10 @@ def search(
         where.append("COALESCE(f.individual_share, 1) < 0.9")
     if state_u:
         where.append("COALESCE(fp.state_hits, 0) > 0")
+    elif zip3:
+        # A ZIP prefix on its own used to be accepted and then ignored entirely,
+        # so the user got a national list presented as a local match.
+        where.append("COALESCE(fp.zip3_hits, 0) > 0")
     if amount:
         where.append("(f.max_grant IS NULL OR f.max_grant >= ?)")
         params.append(amount)
@@ -231,15 +264,17 @@ def search(
         if cause is None:
             continue
         cause_n = max(0.0, min(1.0, (cause + 1) / 2))
-        geo = _geo_score(state_u, zip3, r[9], r[10], r[21], r[20])
+        geo = _geo_score(state_u, zip3, r[20], r[21], r[7])
         size = _size_fit(amount, r[5], r[6])
-        openness = r[11] if r[11] is not None else 0.5
+        openness = _openness_score(r[11])
         score = (
             WEIGHTS["cause"] * cause_n
             + WEIGHTS["geography"] * geo
             + WEIGHTS["size"] * size
-            + WEIGHTS["openness"] * min(openness * 2, 1.0)
+            + WEIGHTS["openness"] * openness
         )
+        # The components published below are the exact values summed here, so a
+        # user can recompute the score from what they are shown.
         scored.append((score, cause_n, geo, size, openness, r))
 
     scored.sort(key=lambda t: -t[0])
@@ -257,6 +292,21 @@ def search(
             [ein],
         ).fetchall()
         caveats = []
+        if r[12]:
+            caveats.append(
+                "Filed that it contributes only to preselected organizations and "
+                "accepts no unsolicited requests."
+            )
+        if (r[7] or 0) <= 2:
+            caveats.append(
+                f"Only {r[7]} grant(s) on record — the typical-grant figure is a "
+                "single data point, not a range."
+            )
+        if not r[5]:
+            caveats.append(
+                "Median recorded grant is zero or absent, so size fit could not be "
+                "judged and is shown as neutral."
+            )
         if r[11] is None:
             caveats.append("Openness unknown: fewer than 3 years of grant history.")
         if (r[18] or 0) < 0.3:
