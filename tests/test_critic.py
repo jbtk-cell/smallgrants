@@ -9,6 +9,8 @@ import pytest
 
 from smallgrants.agents import (
     _EXCLUDES_INDIVIDUALS,
+    Finding,
+    _resolve_verdict,
     _rule_findings,
     _states_named,
     _verdict_from,
@@ -156,6 +158,51 @@ def test_unknown_openness_does_not_score_top():
     assert unknown < best
     assert unknown < median
     assert best <= 1.0
+
+
+# --- the model could overwrite what the foundation filed about itself --------
+
+OPTIMISTIC = "This is a strong fit. Send it."
+
+
+def rule(severity):
+    return Finding(severity=severity, claim=f"a {severity} fact", evidence="from the filing")
+
+
+def model(severity):
+    return Finding(
+        severity=severity, claim=f"model says {severity}", evidence="inferred", source="model"
+    )
+
+
+def test_model_cannot_talk_past_a_disqualifying_filing_fact():
+    """The critic used to return the model's list instead of its own, so a
+    foundation that had filed "no unsolicited requests" became "send it"."""
+    assert _resolve_verdict(OPTIMISTIC, [rule("disqualifying")], []) == (
+        "Do not send this. At least one disqualifying problem is on the record."
+    )
+
+
+def test_model_cannot_talk_past_a_serious_filing_fact():
+    """The first fix only guarded the disqualifying tier, so a serious fact off
+    the filing still sat under an optimistic headline."""
+    assert _resolve_verdict(OPTIMISTIC, [rule("serious")], []) == (
+        "Send only after resolving the serious problems below."
+    )
+
+
+def test_model_cannot_talk_past_a_worth_checking_filing_fact():
+    assert _resolve_verdict(OPTIMISTIC, [rule("worth_checking")], []) != OPTIMISTIC
+
+
+def test_model_keeps_its_own_verdict_when_it_is_no_gentler():
+    assert _resolve_verdict(OPTIMISTIC, [rule("serious")], [model("serious")]) == OPTIMISTIC
+    assert _resolve_verdict(OPTIMISTIC, [rule("serious")], [model("disqualifying")]) == OPTIMISTIC
+    assert _resolve_verdict(OPTIMISTIC, [], []) == OPTIMISTIC
+
+
+def test_a_clean_record_does_not_invent_a_problem():
+    assert _resolve_verdict("Nothing found.", [], [model("serious")]) == "Nothing found."
 
 
 # --- web input handling: each of these was an unauthenticated 500 or an

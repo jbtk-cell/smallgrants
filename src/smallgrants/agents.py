@@ -300,6 +300,28 @@ def _rule_findings(profile: dict, ask: dict) -> list[Finding]:
     return findings
 
 
+_SEVERITY_RANK = {"worth_checking": 1, "serious": 2, "disqualifying": 3}
+
+
+def _worst(findings: list[Finding]) -> int:
+    return max((_SEVERITY_RANK.get(f.severity, 0) for f in findings), default=0)
+
+
+def _resolve_verdict(
+    model_verdict: str, rule_findings: list[Finding], model_findings: list[Finding]
+) -> str:
+    """The filing record is the floor under the headline sentence.
+
+    The model writes the verdict only when its own findings are at least as
+    severe as the ones read off the filing. Otherwise the verdict is derived
+    from the union, so an optimistic sentence can never sit above a serious
+    fact the foundation itself filed.
+    """
+    if _worst(model_findings) >= _worst(rule_findings):
+        return model_verdict
+    return _verdict_from(rule_findings + model_findings)
+
+
 def _verdict_from(findings: list[Finding]) -> str:
     if any(f.severity == "disqualifying" for f in findings):
         return "Do not send this. At least one disqualifying problem is on the record."
@@ -429,13 +451,11 @@ def critique_ask(data_dir: str, ein: str, ask: dict, force_rules: bool = False) 
         # earlier version substituted them, so a model that returned an empty
         # list turned a foundation that had filed "no unsolicited requests" into
         # "a strong fit; send it". The rules are the floor; the model can only
-        # add to them, and the verdict is downgraded to match the worst of both.
+        # add to them, and the verdict never reads gentler than the filing.
         combined = rule_findings + model_findings
-        rules_verdict = _verdict_from(combined)
-        worst_is_rules = any(f.severity == "disqualifying" for f in rule_findings)
         return Critique(
             findings=combined,
-            verdict=rules_verdict if worst_is_rules else parsed["verdict"],
+            verdict=_resolve_verdict(parsed["verdict"], rule_findings, model_findings),
             engine=MODEL,
         )
     except Exception as exc:  # never let the critic break the app

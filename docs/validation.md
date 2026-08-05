@@ -119,15 +119,36 @@ to what the evidence supports.
 
 ## Search behaviour
 
+Measured against the final corpus, after the duplicate-filing fix.
+
 A query for a student-run environmental monitoring project in Connecticut seeking
-$3,000 returns The Rockfall Foundation (Middletown, CT) first. Its three most
-recent grants are $4,000 to the Town of Portland, $3,500 to the Connecticut Forest
-& Park Association, and $3,500 to the East Haddam Land Trust, each recorded with
-the purpose ENVIRONMENTAL. It publishes a submission deadline.
+$3,000 returns 25 funders. The Rockfall Foundation (Middletown, CT) ranks first:
+60 grants, typical grant $2,704, largest $6,835. Its three most recent are $4,900
+to Wesleyan University, $4,000 to the Connecticut Forest & Park Association and
+$3,600 to the Fountain Hill Cemetery Association, each recorded with the purpose
+ENVIRONMENTAL. It publishes a deadline, which the review surfaces.
 
 The same foundation, asked for $500,000 from Texas, is refused: the ask exceeds
-its largest recorded grant of $4,000 (disqualifying) and 100% of its giving is in
-Connecticut (serious). Both findings are produced without any model call.
+its largest recorded grant of $6,835 (disqualifying), 100% of its giving is in
+Connecticut (serious), and its filed restrictions name Connecticut (serious). An
+individual asking it for $3,000 is also refused — all 60 of its recorded grants
+name an organization. Every one of these findings is produced without a model
+call, and each quotes the filing text it came from.
+
+## The verdict could still read gentler than the record
+
+Final verification found one defect left in the critic, a tier below the one
+already fixed. The rule findings were correctly merged into the model's list, but
+the *headline verdict* was only forced to the deterministic sentence when a rule
+finding was **disqualifying**. A `serious` fact read straight off the filing —
+"100% of its grants go to CT; none of its recent grants went to TX" — could
+therefore sit in the findings list underneath a model verdict reading "This is a
+strong fit. Send it."
+
+The verdict is now resolved by severity: the model writes the headline only when
+its own findings are at least as severe as the ones taken from the filing;
+otherwise the headline is derived from the union. A model can make the verdict
+harsher. It cannot make it kinder than the foundation's own filing supports.
 
 ## Defects found by adversarial review
 
