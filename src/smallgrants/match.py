@@ -19,7 +19,16 @@ EMB_FILE = "cause_embeddings.npy"
 EMB_INDEX = "cause_embeddings_eins.txt"
 DEFAULT_MODEL = "sentence-transformers/all-MiniLM-L6-v2"
 
-WEIGHTS = {"cause": 0.45, "geography": 0.30, "size": 0.15, "openness": 0.10}
+# Weights follow what the corpus actually supports. Openness was designed as a
+# reachability proxy and validated against foundations' own declared status
+# (smallgrants validate): the direction holds and is overwhelmingly significant
+# at n=84,328, but Cohen's d is 0.355 -- a small effect. Foundations that declare
+# they accept no unsolicited requests still replace a third of their grantees
+# each year, so turnover cannot carry weight as a reachability signal. It stays
+# as a labelled tiebreaker at half its original weight; the freed weight goes to
+# geography, which is the strongest signal the data supports.
+WEIGHTS = {"cause": 0.45, "geography": 0.35, "size": 0.15, "openness": 0.05}
+OPENNESS_EFFECT_SIZE = 0.355  # Cohen's d, measured; see docs/validation.md
 
 # Purpose strings that carry no information about what a foundation funds.
 BOILERPLATE = {

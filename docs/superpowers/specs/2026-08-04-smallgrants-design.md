@@ -1,8 +1,15 @@
 # SmallGrants — an open index of US foundation giving
 
-**Status:** approved design, not yet implemented
+**Status:** implemented; see [`docs/validation.md`](../../validation.md) for measured outcomes
 **Date:** 2026-08-04
 **Author:** Johnny Klaus
+
+> The estimates in "Verified data foundation" below were taken from a single
+> archive before the corpus was built. The built corpus is roughly twice as
+> large: **562,413 filings, 142,806 foundations, 8,483,757 grant records**. The
+> per-record structure, the grant-size distribution, and the boilerplate rate all
+> held. The scale estimate did not, and the openness ratio did not survive
+> validation intact — both are recorded in `docs/validation.md`.
 
 ## Problem
 
@@ -218,11 +225,14 @@ alongside the dataset.
 
 ## Risks and open questions
 
-1. **Openness ratio is unvalidated.** It requires three or more years of
-   filings and has not yet been computed on real multi-year data. If grantee
-   turnover proves to have no relationship to whether a foundation actually
-   responds to new applicants, the signal must be dropped rather than shipped as
-   decoration. **This is the first thing to test.**
+1. ~~**Openness ratio is unvalidated.**~~ **RESOLVED — tested, demoted.** Measured
+   against the 70% of foundations that declare their own status on Part XV line 2
+   (n=84,328): direction correct, Welch t=43.93, but Cohen's d=0.355. Foundations
+   that declare they accept no unsolicited requests still replace a third of their
+   grantees each year, so turnover cannot be trusted as a reachability signal on
+   its own. Weight cut from 0.10 to 0.05, labelled "weak signal" everywhere it is
+   shown, and the declared flag remains the primary filter. Full numbers in
+   [`docs/validation.md`](../../validation.md).
 2. **Entity-resolution quality is unmeasured.** Recipient names are free text
    with no EIN. If resolution accuracy is poor, NTEE-derived cause profiles
    degrade, and the boilerplate solution weakens with them.

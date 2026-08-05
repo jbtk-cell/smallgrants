@@ -24,8 +24,23 @@
   <dt>Latest filing</dt><dd>{{ profile.last_year or "—" }}</dd>
   <dt>New grantees</dt><dd>
     {%- if profile.openness_ratio is not none %}{{ "%.0f"|format(profile.openness_ratio * 100) }}% each year
+      — weak signal, see below
     {%- else %}unknown — fewer than 3 years of grant history{% endif %}</dd>
 </dl>
+
+<p class="notes" style="margin-left:0">
+  {% if profile.declared_closed %}
+    This foundation filed that it contributes only to preselected organizations and
+    accepts no unsolicited requests. That is its own statement to the IRS, not an inference.
+  {% else %}
+    This foundation did not check the box for "contributions only to preselected
+    organizations" — which is weaker than saying it is open. Most foundations that
+    accept applications never say so anywhere.
+  {% endif %}
+  New-grantee turnover is shown because it is the only behavioural hint available, but
+  it is a weak one: foundations that declare themselves closed still replace about a
+  third of their grantees each year.
+</p>
 
 {% if profile.app_deadlines or profile.app_restrictions or profile.app_contact_name %}
 <h2>What it published about applying</h2>

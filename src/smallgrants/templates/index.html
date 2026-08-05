@@ -65,7 +65,7 @@
         geography {{ "%.2f"|format(r.components.geography) }} ·
         size fit {{ "%.2f"|format(r.components.size) }} ·
         {% if r.openness_ratio is not none %}
-          new grantees {{ "%.0f"|format(r.components.openness * 100) }}%
+          new grantees {{ "%.0f"|format(r.components.openness * 100) }}%/yr (weak signal)
         {% else %}new grantees unknown{% endif %}
       </div>
 
