@@ -93,9 +93,11 @@ def build_embeddings(data_dir: str, model_name: str = DEFAULT_MODEL) -> dict:
         texts.append(text[:2000])
 
     model = SentenceTransformer(model_name)
+    import sys
+
     vecs = model.encode(
         texts, batch_size=256, convert_to_numpy=True, normalize_embeddings=True,
-        show_progress_bar=True,
+        show_progress_bar=sys.stderr.isatty(),  # a bar in a log file is just noise
     ).astype(np.float32)
 
     np.save(os.path.join(data_dir, EMB_FILE), vecs)
@@ -170,21 +172,21 @@ def search(
     con = connect(data_dir, read_only=True)
     state_u = state.upper() if state else None
 
-    # Geographic footprint per candidate, computed from actual grantee addresses.
-    con.execute("DROP VIEW IF EXISTS _footprint")
-    con.execute(
-        """
-        CREATE TEMP VIEW _footprint AS
-        SELECT ein,
-               count(*) FILTER (WHERE recipient_state = ?)                AS state_hits,
-               count(*) FILTER (WHERE substr(recipient_zip, 1, 3) = ?)    AS zip3_hits
-        FROM grants GROUP BY ein
-        """,
-        [state_u, zip3],
-    )
-
+    # Geographic footprint per candidate, from actual grantee addresses. Scanning
+    # only the rows that match the user's geography keeps this small; aggregating
+    # every grant in the corpus on each search does not scale.
+    footprint_cte = """
+        WITH fp AS (
+            SELECT ein,
+                   count(*) FILTER (WHERE recipient_state = ?)             AS state_hits,
+                   count(*) FILTER (WHERE substr(recipient_zip, 1, 3) = ?) AS zip3_hits
+            FROM grants
+            WHERE recipient_state = ? OR substr(recipient_zip, 1, 3) = ?
+            GROUP BY ein
+        )
+    """
     where = ["f.grant_count > 0"]
-    params: list = []
+    params: list = [state_u, zip3, state_u, zip3]
     if not include_closed:
         where.append("NOT f.declared_closed")
     if for_individual:
@@ -198,7 +200,8 @@ def search(
         params.append(amount)
 
     rows = con.execute(
-        f"""
+        footprint_cte
+        + f"""
         SELECT f.ein, f.name, f.city, f.state, f.zip3, f.median_grant, f.max_grant,
                f.grant_count, f.last_year, f.top_state, f.top_state_share,
                f.openness_ratio, f.declared_closed, f.has_application_info,
@@ -206,7 +209,7 @@ def search(
                f.total_assets_eoy, f.ntee_coverage, f.individual_share,
                COALESCE(fp.state_hits, 0), COALESCE(fp.zip3_hits, 0)
         FROM foundation_signals f
-        LEFT JOIN _footprint fp ON fp.ein = f.ein
+        LEFT JOIN fp ON fp.ein = f.ein
         WHERE {' AND '.join(where)}
         """,
         params,

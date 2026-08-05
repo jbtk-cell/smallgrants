@@ -16,7 +16,15 @@ def db_path(data_dir: str) -> str:
 
 def connect(data_dir: str, read_only: bool = False) -> duckdb.DuckDBPyConnection:
     os.makedirs(data_dir, exist_ok=True)
-    return duckdb.connect(db_path(data_dir), read_only=read_only)
+    con = duckdb.connect(db_path(data_dir), read_only=read_only)
+    if not read_only:
+        # Spill beside the database rather than into /tmp: the joins over the
+        # full corpus can exceed memory, and a filled /tmp fails in confusing
+        # ways far from the query that caused it.
+        tmp = os.path.join(data_dir, "duckdb_tmp")
+        os.makedirs(tmp, exist_ok=True)
+        con.execute(f"SET temp_directory = '{tmp}'")
+    return con
 
 
 def load_staging(data_dir: str) -> dict[str, int]:

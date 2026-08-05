@@ -57,9 +57,9 @@ def index(
         except Exception as exc:
             error = f"{type(exc).__name__}: {exc}"
     return templates.TemplateResponse(
+        request,
         "index.html",
         {
-            "request": request,
             "q": q,
             "state": state,
             "zip3": zip3,
@@ -79,8 +79,9 @@ def foundation(request: Request, ein: str):
 
     profile = foundation_profile(data_dir(), ein)
     return templates.TemplateResponse(
+        request,
         "foundation.html",
-        {"request": request, "profile": profile, "ein": ein, "critique": None, "ask": {}},
+        {"profile": profile, "ein": ein, "critique": None, "ask": {}},
     )
 
 
@@ -103,9 +104,9 @@ def critique(
     }
     result = critique_ask(data_dir(), ein, ask)
     return templates.TemplateResponse(
+        request,
         "foundation.html",
         {
-            "request": request,
             "profile": foundation_profile(data_dir(), ein),
             "ein": ein,
             "critique": result.to_dict(),

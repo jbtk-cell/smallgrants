@@ -203,8 +203,14 @@ def enrich(data_dir: str, skip_download: bool = False) -> dict:
         LEFT JOIN bmf_state_unique s
                ON b.recipient_norm = s.name_norm AND b.recipient_state = s.state
         LEFT JOIN bmf_natl_unique n
-               ON b.recipient_norm = n.name_norm AND s.ein IS NULL
+               ON b.recipient_norm = n.name_norm
         """
+        # Both joins are plain equi-joins so DuckDB can hash them. An earlier
+        # version put "AND s.ein IS NULL" in the second ON clause to express
+        # "only fall back nationally"; because that references the first join's
+        # output it cannot be hashed, and the planner fell back to a nested loop
+        # that never finished. Precedence is expressed by COALESCE instead --
+        # the state match wins wherever it exists, which is the same semantics.
     )
 
     total = con.execute("SELECT count(*) FROM grants").fetchone()[0]
