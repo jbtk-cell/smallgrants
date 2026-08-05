@@ -12,6 +12,7 @@ from __future__ import annotations
 
 import math
 import os
+from contextlib import closing
 
 import numpy as np
 
@@ -22,13 +23,13 @@ DEFAULT_MODEL = "sentence-transformers/all-MiniLM-L6-v2"
 # Weights follow what the corpus actually supports. Openness was designed as a
 # reachability proxy and validated against foundations' own declared status
 # (smallgrants validate): the direction holds and is overwhelmingly significant
-# at n=84,328, but Cohen's d is 0.355 -- a small effect. Foundations that declare
+# at n=77,605, but Cohen's d is 0.286 -- a small effect. Foundations that declare
 # they accept no unsolicited requests still replace a third of their grantees
 # each year, so turnover cannot carry weight as a reachability signal. It stays
 # as a labelled tiebreaker at half its original weight; the freed weight goes to
 # geography, which is the strongest signal the data supports.
 WEIGHTS = {"cause": 0.45, "geography": 0.35, "size": 0.15, "openness": 0.05}
-OPENNESS_EFFECT_SIZE = 0.355  # Cohen's d, measured; see docs/validation.md
+OPENNESS_EFFECT_SIZE = 0.286  # Cohen's d, measured; see docs/validation.md
 
 # Purpose strings that carry no information about what a foundation funds.
 BOILERPLATE = {
@@ -280,17 +281,29 @@ def search(
     scored.sort(key=lambda t: -t[0])
     top = scored[:limit]
 
+    # One query for every result's evidence rather than one scan per result:
+    # the per-result form issued 25 separate full scans of `grants` per search.
+    top_eins = [r[0] for _, _, _, _, _, r in top]
+    evidence_by_ein: dict[str, list] = {e: [] for e in top_eins}
+    if top_eins:
+        placeholders = ",".join("?" * len(top_eins))
+        for row in con.execute(
+            f"""
+            SELECT ein, recipient_name, amount, tax_year, purpose FROM (
+                SELECT ein, recipient_name, amount, tax_year, purpose,
+                       row_number() OVER (PARTITION BY ein
+                                          ORDER BY tax_year DESC, amount DESC) AS rn
+                FROM grants WHERE ein IN ({placeholders}) AND amount IS NOT NULL
+            ) WHERE rn <= 5
+            """,
+            top_eins,
+        ).fetchall():
+            evidence_by_ein[row[0]].append(row[1:])
+
     results = []
     for score, cause_n, geo, size, openness, r in top:
         ein = r[0]
-        evidence = con.execute(
-            """
-            SELECT recipient_name, amount, tax_year, purpose
-            FROM grants WHERE ein = ? AND amount IS NOT NULL
-            ORDER BY tax_year DESC, amount DESC LIMIT 5
-            """,
-            [ein],
-        ).fetchall()
+        evidence = evidence_by_ein.get(ein, [])
         caveats = []
         if r[12]:
             caveats.append(

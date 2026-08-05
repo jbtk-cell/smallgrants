@@ -2,7 +2,9 @@
 {% block title %}{{ profile.name if profile else ein }} — SmallGrants{% endblock %}
 {% block content %}
 
-{% if not profile %}
+{% if error %}
+  <p class="err">{{ error }}</p>
+{% elif not profile %}
   <p class="err">No foundation with EIN {{ ein }} in the corpus.</p>
 {% else %}
 

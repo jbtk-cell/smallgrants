@@ -157,6 +157,11 @@ def derive(data_dir: str) -> dict:
         """
     )
 
+    # There was no index anywhere in the corpus; every evidence lookup and every
+    # profile read was a full scan of an 8M-row table.
+    con.execute("CREATE INDEX IF NOT EXISTS grants_ein ON grants (ein)")
+    con.execute("CREATE INDEX IF NOT EXISTS signals_ein ON foundation_signals (ein)")
+
     out = {
         "foundations": con.execute("SELECT count(*) FROM foundation_signals").fetchone()[0],
         "with_grants": con.execute(

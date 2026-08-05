@@ -13,6 +13,7 @@ from __future__ import annotations
 
 import json
 import os
+from contextlib import closing
 from dataclasses import dataclass, field
 
 MODEL = "claude-opus-5"

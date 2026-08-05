@@ -156,3 +156,40 @@ def test_unknown_openness_does_not_score_top():
     assert unknown < best
     assert unknown < median
     assert best <= 1.0
+
+
+# --- web input handling: each of these was an unauthenticated 500 or an
+# --- inverted filter before review --------------------------------------------
+
+
+@pytest.mark.parametrize(
+    "raw,expected",
+    [
+        ("3000", 3000),
+        ("", None),
+        ("  ", None),
+        ("²", None),          # '²'.isdigit() is True but int('²') raises
+        ("٣", None),          # Arabic-Indic digit silently parsed as 3
+        ("9" * 5000, None),   # int() refuses >4300 digits
+        ("-5", None),
+        ("0", None),
+        ("abc", None),
+    ],
+)
+def test_amount_parsing_never_raises(raw, expected):
+    from smallgrants.app import _int_or_none
+
+    assert _int_or_none(raw) == expected
+
+
+@pytest.mark.parametrize(
+    "raw,expected",
+    [("1", True), ("true", True), ("on", True), ("", False),
+     ("0", False), ("false", False), ("off", False)],
+)
+def test_include_closed_flag(raw, expected):
+    """bool("false") is True, so include_closed=false used to surface exactly the
+    foundations the user asked to exclude."""
+    from smallgrants.app import _flag
+
+    assert _flag(raw) is expected
