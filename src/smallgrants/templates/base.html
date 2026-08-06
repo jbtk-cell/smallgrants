@@ -148,7 +148,7 @@ footer { margin-top: 3rem; padding-top: 1rem; border-top: 1px solid var(--rule);
       {%- if summary and summary.get('foundations') -%}
         <b>{{ "{:,}".format(summary.foundations) }}</b> private foundations &middot;
         <b>{{ "{:,}".format(summary.grant_records) }}</b> grants on record &middot;
-        filing years {{ summary.year_range }} &middot;
+        tax years {{ summary.year_range }} &middot;
         median grant <b>${{ "{:,.0f}".format(summary.median_grant or 0) }}</b>
       {%- else -%}
         an open index of US foundation giving, built from IRS Form 990-PF filings
@@ -159,7 +159,8 @@ footer { margin-top: 3rem; padding-top: 1rem; border-top: 1px solid var(--rule);
   <footer>
     Built from IRS Form 990-PF bulk filings (apps.irs.gov). Foundations are shown as they
     reported themselves to the IRS; filings lag the tax year, often by more than a year.<br>
-    Findings come from what a foundation filed, not from whether it will say yes.
+    Findings come from what a foundation filed, not from whether it will say yes.<br>
+    <a href="/method">How this works, and what it cannot tell you</a>
   </footer>
 </div>
 </body>

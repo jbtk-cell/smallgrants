@@ -1,0 +1,24 @@
+# fly launch --no-deploy   then   fly volumes create data --size 2   then   fly deploy
+app = "smallgrants"
+primary_region = "iad"
+
+[build]
+  dockerfile = "Dockerfile"
+
+[[mounts]]
+  source = "data"
+  destination = "/data"
+
+[http_service]
+  internal_port = 8000
+  force_https = true
+  auto_stop_machines = "suspend"
+  auto_start_machines = true
+  min_machines_running = 0
+
+[[vm]]
+  # The embedding model needs about 1 GB resident. 512 MB gets OOM-killed on the
+  # first search, which looks like a corpus failure rather than a memory one.
+  memory = "1gb"
+  cpu_kind = "shared"
+  cpus = 1

@@ -58,6 +58,16 @@ def main(argv: list[str] | None = None) -> int:
     p.add_argument("--host", default="127.0.0.1")
     p.add_argument("--port", type=int, default=8000)
 
+    p = sub.add_parser("stats", help="what the usage log can honestly say")
+    p.add_argument("--days", type=int, default=30)
+    p.add_argument("--include-bots", action="store_true")
+    p.add_argument("--json", action="store_true")
+
+    p = sub.add_parser(
+        "package", help="write a serving-only copy of the corpus for deployment"
+    )
+    p.add_argument("--out", default=None, help="directory to write (default: data/dist)")
+
     args = ap.parse_args(argv)
     data = args.data_dir
 
@@ -149,6 +159,53 @@ def main(argv: list[str] | None = None) -> int:
 
         os.environ["SMALLGRANTS_DATA"] = data
         uvicorn.run("smallgrants.app:app", host=args.host, port=args.port)
+        return 0
+
+    if args.cmd == "stats":
+        from smallgrants.usage import stats
+
+        s = stats(data, days=args.days, include_bots=args.include_bots)
+        if args.json:
+            print(json.dumps(s, indent=2, default=str))
+            return 0
+        if "error" in s:
+            print(s["error"])
+            return 0
+        t = s["totals"]
+        print(f"{'searches':<28}{t['searches'] or 0:>10,}")
+        print(f"{'foundation pages opened':<28}{t['foundation_views'] or 0:>10,}")
+        print(f"{'reviews run':<28}{t['reviews'] or 0:>10,}")
+        print(f"{'distinct visitors':<28}{t['visitors'] or 0:>10,}")
+        print(f"{'days with any traffic':<28}{t['days_live'] or 0:>10,}")
+        print(f"{'bot requests excluded':<28}{s['bots_excluded']:>10,}")
+        e = s["empty_searches"]
+        print(
+            f"\nsearches returning nothing   {e['returned_nothing']:,} of {e['searches']:,}"
+            f"  ({(100 * e['returned_nothing'] / e['searches']) if e['searches'] else 0:.0f}%)"
+        )
+        print(
+            f"visitors who searched and then opened a funder   "
+            f"{s['searchers_who_opened_a_funder']:,}"
+        )
+        if s["by_day"]:
+            print("\nday          visitors  searches  opened")
+            for day, v, se, fo in s["by_day"]:
+                print(f"  {day}  {v or 0:>8,}  {se or 0:>8,}  {fo or 0:>6,}")
+        if s["top_queries"]:
+            print("\nmost searched")
+            for q, n in s["top_queries"]:
+                print(f"  {n:>5,}  {q[:64]}")
+        if s["top_states"]:
+            print("\nstates searched")
+            print("  " + "  ".join(f"{st} {n:,}" for st, n in s["top_states"]))
+        return 0
+
+    if args.cmd == "package":
+        from smallgrants.package import package
+
+        out = package(data, args.out)
+        for k, v in out.items():
+            print(f"{k:<28}{v}")
         return 0
 
     return 1

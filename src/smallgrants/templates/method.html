@@ -1,0 +1,191 @@
+{% extends "base.html" %}
+{% block title %}How SmallGrants works &middot; SmallGrants{% endblock %}
+{% block content %}
+
+<style>
+.doc { max-width: 44rem; }
+.doc h2 { font-family: var(--mono); font-size: .95rem; font-weight: 600;
+          letter-spacing: .02em; margin: 2.4rem 0 .6rem;
+          padding-bottom: .3rem; border-bottom: 1px solid var(--rule); }
+.doc h2:first-of-type { margin-top: 1rem; }
+.doc p { margin: .85rem 0; }
+.doc ul { margin: .85rem 0; padding-left: 1.1rem; }
+.doc li { margin: .35rem 0; }
+.lede { font-size: 1.08rem; }
+.num { font-family: var(--mono); font-weight: 600; }
+
+/* Coverage rule: the share of grants matched to a known organization, drawn to
+   scale so the unmatched part is as visible as the matched part. */
+.cov { margin: 1.2rem 0 .4rem; }
+.cov-bar { display: flex; height: 2.1rem; border: 1px solid var(--ink); }
+.cov-bar span { display: block; }
+.cov-a { background: var(--band); }
+.cov-b { background: var(--band-2); border-left: 1px solid var(--hair); }
+.cov-c { background: var(--paper); border-left: 1px solid var(--hair); }
+.cov-d { background: var(--flag-bg); border-left: 1px solid var(--flag); }
+.cov-key { font-family: var(--mono); font-size: .72rem; color: var(--dim);
+           margin-top: .5rem; line-height: 1.7; }
+.cov-key b { color: var(--ink); font-weight: 600; }
+.cov-key .r { color: var(--flag); }
+
+table.w { width: 100%; border-collapse: collapse; font-family: var(--mono);
+          font-size: .8rem; margin: 1rem 0; }
+table.w th { text-align: left; font-weight: 600; border-bottom: 1px solid var(--ink);
+             padding: .35rem .5rem .35rem 0; }
+table.w td { padding: .3rem .5rem .3rem 0; border-bottom: 1px solid var(--hair); }
+table.w td.n { text-align: right; }
+.scroll { overflow-x: auto; }
+</style>
+
+<div class="doc">
+
+<p class="lede">Everything here comes from filings foundations submitted to the IRS.
+This page says where the numbers come from, what the data cannot tell you, and
+which of the original ideas failed when it was tested.</p>
+
+<h2>Where the data comes from</h2>
+
+<p>Every private foundation in the United States files a Form 990-PF each year.
+Part XV of that form lists the grants it paid out: the recipient, their city and
+state, a stated purpose, and the amount. The IRS publishes these filings as bulk
+XML, roughly 27 GB across 49 archives for filing years 2022 through 2026.</p>
+
+<p>That is the entire source. Nothing here was submitted by a foundation, bought
+from a data vendor, or chosen by an editor. If a foundation appears, it is
+because it filed, and the figures shown are the ones it reported.</p>
+
+<p>Five of the 49 archives use a compression format that most tools report as a
+corrupt file. Those five hold <span class="num">89,345</span> filings and about
+<span class="num">1,044,450</span> grants. Believing the error message would have
+dropped an eighth of the corpus without any sign that something was missing.</p>
+
+<h2>What the record does not identify</h2>
+
+<p>Foundations write recipients as free text with no EIN. A filing says
+<span class="num">CONNECTICUT FOREST &amp; PARK ASSOC</span> and stops there, so
+connecting a grant to a known organization means matching on the name. Names are
+matched against the IRS Business Master File, which lists about 1.98 million
+registered organizations.</p>
+
+<div class="cov">
+  <div class="cov-bar" role="img"
+       aria-label="47.0% matched by name and state, 3.1% organizations filed in the person field, 9.7% grants to individuals, 40.2% unresolved">
+    <span class="cov-a" style="width:47.0%"></span>
+    <span class="cov-b" style="width:3.1%"></span>
+    <span class="cov-c" style="width:9.7%"></span>
+    <span class="cov-d" style="width:40.2%"></span>
+  </div>
+  <div class="cov-key">
+    <b>47.0%</b> matched on name and state &nbsp;&middot;&nbsp;
+    <b>3.1%</b> organizations the filer typed into the person field &nbsp;&middot;&nbsp;
+    <b>9.7%</b> grants to individuals, which are not in the register by design &nbsp;&middot;&nbsp;
+    <span class="r"><b>40.2%</b> unresolved</span>
+  </div>
+</div>
+
+<p>Those unresolved grants are real money to real organizations. They fail to
+match because they were written under a trading name, an abbreviation, or a
+misspelling. This is the biggest known weakness in the product and it has a
+consequence worth stating plainly: when a foundation's history looks thin here,
+that might mean it gives narrowly, or it might mean its grantees sit in the
+unmatched 40%.</p>
+
+<p>One matching rule was removed after it was tested. Where a name was unique
+across the whole country, the system used to accept the match without checking
+the state. That produced 3.3% of all matches, and
+<span class="num">97.6%</span> of them were wrong. A well known charity files
+under a decorated legal name while some small unrelated organization holds the
+plain one, so <span class="num">PLANNED PARENTHOOD</span> resolved to a single
+San Antonio organization across 5,175 grants in 46 states. National uniqueness
+turned out to measure obscurity rather than identity.</p>
+
+<h2>The idea that did not survive testing</h2>
+
+<p>The original design rested on something called the openness ratio: the share
+of a foundation's grantees each year that it had never funded before. The
+reasoning was that a foundation constantly taking on new grantees is more likely
+to consider a stranger.</p>
+
+<p>It can be checked, because roughly 70% of foundations state on Part XV line 2
+whether they accept unsolicited requests. Their own answer is the truth to test
+against. The ratio is only a guess at it.</p>
+
+<div class="scroll">
+<table class="w">
+  <tr><th>Foundations with enough history to measure</th><th class="n">n</th><th class="n">grantees replaced each year</th></tr>
+  <tr><td>Declared they accept no unsolicited requests</td><td class="n">59,952</td><td class="n">32.4%</td></tr>
+  <tr><td>Did not declare themselves closed</td><td class="n">17,653</td><td class="n">39.5%</td></tr>
+  <tr><td>Difference</td><td class="n">77,605</td><td class="n">+7.1 points</td></tr>
+</table>
+</div>
+
+<p>The gap runs in the direction the idea needs, and at this sample size it is
+not chance (Welch t = 33.6). It is also small: Cohen's d = 0.286. The number that
+settled the argument is in the first row. Foundations that state in writing that
+they accept no unsolicited requests still replace about a third of their grantees
+every year. Turnover does not mean reachable.</p>
+
+<p>So the ratio dropped from 10% of the ranking weight to 5%, and it is marked a
+weak signal wherever it appears. It was not thrown out, because it does carry
+information. It is not relied on, because it does not carry much.</p>
+
+<p>An earlier run of the same test reported a larger effect, d = 0.355. That
+number was wrong. It counted grants to individuals, which turned the ratio into a
+scholarship detector, since a fund paying a fresh cohort of students each year
+scores near 1.0 by construction.</p>
+
+<h2>How results are ordered</h2>
+
+<div class="scroll">
+<table class="w">
+  <tr><th>Input</th><th class="n">weight</th><th>what it reads</th></tr>
+  <tr><td>Cause</td><td class="n">45%</td><td>what this foundation has actually funded</td></tr>
+  <tr><td>Geography</td><td class="n">35%</td><td>whether it has funded in your state</td></tr>
+  <tr><td>Size</td><td class="n">15%</td><td>whether your ask fits its range of grants</td></tr>
+  <tr><td>Openness</td><td class="n">5%</td><td>grantee turnover, the weak signal above</td></tr>
+</table>
+</div>
+
+<p>Cause carries the most weight and is read from grant history rather than from
+any mission statement. <span class="num">37.7%</span> of stated purposes are
+boilerplate, things like GENERAL OPERATING or CHARITABLE, so where the purpose
+text says nothing the recipient's own registered activity code stands in for
+it.</p>
+
+<p>The strongest filter is not a score at all. It is Part XV line 2, where
+<span class="num">70.3%</span> of foundations state that they fund only
+organizations they select themselves. Those foundations are hidden unless you ask
+for them. That is a fact each one filed about itself, not a guess made about it
+from the outside.</p>
+
+<h2>What this cannot tell you</h2>
+
+<ul>
+  <li>Whether a foundation will say yes. Nothing here predicts that.</li>
+  <li>Whether it is still giving. Filings lag the tax year, often by more than a
+      year, and every foundation shows the most recent year on record.</li>
+  <li>Anything about public charities that make grants. They report on Form 990
+      Schedule I, which is not in this corpus. Only private foundations file a
+      990-PF.</li>
+  <li>Whether the unmatched 40% would change the picture for any particular
+      foundation. It might.</li>
+</ul>
+
+<p>Where the record is too thin to support a claim, the review says so rather
+than guessing. A foundation with no grant to an individual on file and most of
+its recipients unidentified is reported that way, with the unidentified share
+stated, instead of being turned into a confident no.</p>
+
+<h2>Checking it</h2>
+
+<p>The source is public. The archives are at
+<span class="num">apps.irs.gov/pub/epostcard/990/xml/</span> and the Business
+Master File is published alongside them. Every figure on this page came from a
+query against the corpus built from those files, and the build runs end to end
+from the raw archives with no manual steps in the middle.</p>
+
+<p>The full record of what was measured, including the tests that failed and the
+defects found while checking, is kept with the code rather than summarized here.</p>
+
+</div>
+{% endblock %}

@@ -17,6 +17,8 @@ from fastapi import FastAPI, Form, Request
 from fastapi.responses import HTMLResponse
 from fastapi.templating import Jinja2Templates
 
+from smallgrants import usage
+
 log = logging.getLogger("smallgrants")
 
 BASE = os.path.dirname(__file__)
@@ -132,6 +134,11 @@ def index(
             log.exception("search failed for query %r", q[:120])
             error = CORPUS_UNAVAILABLE
 
+        usage.record(
+            data_dir(), "search", request, query=q, state=state,
+            amount=_int_or_none(amount), applicant=applicant, results=len(results),
+        )
+
     return templates.TemplateResponse(
         request,
         "index.html",
@@ -162,9 +169,21 @@ def _foundation_page(request: Request, ein: str, critique=None, ask=None):
     )
 
 
+@app.get("/method", response_class=HTMLResponse)
+def method(request: Request):
+    return templates.TemplateResponse(
+        request, "method.html", {"summary": corpus_summary()}
+    )
+
+
 @app.get("/f/{ein}", response_class=HTMLResponse)
 def foundation(request: Request, ein: str):
-    return _foundation_page(request, _clean(ein, 12))
+    ein = _clean(ein, 12)
+    usage.record(
+        data_dir(), "foundation", request, ein=ein,
+        source="search" if "referer" in request.headers else "direct",
+    )
+    return _foundation_page(request, ein)
 
 
 @app.post("/f/{ein}", response_class=HTMLResponse)
@@ -187,6 +206,12 @@ def critique(
             applicant_type if applicant_type in {"organization", "individual"} else "organization"
         ),
     }
+    # The project text itself is never logged. Only that a review was asked for,
+    # for which foundation, and by which kind of applicant.
+    usage.record(
+        data_dir(), "review", request, ein=ein, state=ask["state"],
+        amount=ask["amount"], applicant=ask["applicant_type"],
+    )
     # The model path is an unauthenticated paid call. Deterministic checks always
     # run; only the model is rate limited.
     force_rules = credentials_available() and _rate_limited()

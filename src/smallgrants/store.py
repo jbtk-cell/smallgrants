@@ -156,7 +156,18 @@ def summary(data_dir: str) -> dict:
         """
     ).fetchone()
     grants = con.execute(
-        "SELECT count(*), median(amount), sum(amount) FROM grants_raw WHERE amount IS NOT NULL"
+        # `grants`, not `grants_raw`: report the table the site actually serves
+        # from. The two agree exactly, and grants_raw is build scaffolding that a
+        # serving-only copy of the corpus does not carry.
+        # Count every grant row, but take the median and total over the rows that
+        # carry a dollar amount. Filtering the count too made the site report 170
+        # fewer grants than the corpus holds, for no reason a reader could see.
+        """
+        SELECT count(*),
+               median(amount) FILTER (WHERE amount IS NOT NULL),
+               sum(amount)
+        FROM grants
+        """
     ).fetchone()
     con.close()
     return {

@@ -20,9 +20,9 @@ Built and measured on 2026-08-04 from all 49 IRS bulk archives, filing years
 
 - **562,413** Form 990-PF filings
 - **142,806** foundations, **8,388,280** grant records
-- Median grant **$5,000**; **55.6% of all grants are $5,000 or less**
+- Median grant **$2,500**; **63.9% of all grants are $5,000 or less**
 - **70.3%** of foundations filed that they accept no unsolicited requests
-- 68.8% of purpose descriptions carry usable information
+- 62.3% of purpose descriptions carry usable information
 
 The small-money layer is abundant. It is simply invisible.
 
@@ -54,6 +54,56 @@ smallgrants embed                       # local sentence-transformers, no API ke
 smallgrants search "..." --state CT --amount 3000
 smallgrants serve                       # http://127.0.0.1:8000
 ```
+
+## Deploying
+
+The built database is 2.65 GB, most of it scaffolding the site never reads: raw
+grant rows from before deduplication, the 1.98M-row IRS business master file, the
+grantee keys used to compute openness. `package` writes a serving-only copy.
+
+```
+smallgrants package                     # -> data/dist, 566 MB + 170 MB embeddings
+```
+
+`Dockerfile` builds an image with CPU-only torch and the embedding model baked in,
+so a running container never calls out to Hugging Face. It reads the corpus from
+`/data`. Give it 1 GB of memory: the model needs about that resident, and a
+512 MB box is killed on the first search in a way that looks like a corpus
+failure rather than a memory one.
+
+`fly.toml` is filled in for Fly.io:
+
+```
+fly launch --no-deploy
+fly volumes create data --size 2
+fly deploy
+# then copy data/dist/* into the volume
+```
+
+Any host that runs a container with a 1 GB volume works the same way. Nothing in
+the app assumes Fly.
+
+## Knowing whether anyone used it
+
+The site keeps its own usage log in SQLite, separate from the corpus, with no
+third-party analytics and no cookies. It records what was searched for, how many
+results came back, and which foundations were opened. It does not record IP
+addresses, user agents, or anything typed into the review box. Visitors are
+counted through a hash whose salt is regenerated nightly, so yesterday's hashes
+cannot be matched to today's visitor.
+
+```
+smallgrants stats                       # searches, visitors, empty searches, funnel
+```
+
+Two of those numbers matter more than the visit count. **Searches that returned
+nothing** shows the corpus failing people who did show up. **Visitors who
+searched and then opened a funder** shows whether the results were worth reading.
+
+One thing the log deliberately cannot tell you: whether a funder was new to the
+person who found it. That has to be asked at the moment someone clicks through,
+and it is the difference between claiming reach and claiming impact. The schema
+has room for the answer whenever that question is worth adding.
 
 ## What did not survive contact with the data
 

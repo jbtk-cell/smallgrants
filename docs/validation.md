@@ -16,6 +16,15 @@ Built from all 49 IRS Form 990-PF bulk archives for filing years 2022–2026.
 | Foundations with a grant schedule | 110,922 |
 | Foundations declaring no unsolicited requests | 100,448 (70.3%) |
 | Foundations publishing application instructions | 31,747 (22.2%) |
+| Median grant | $2,500 |
+| Grants of $5,000 or less | 63.9% |
+| Purpose text that is boilerplate | 37.7% |
+
+The design estimated a $5,000 median and 55.6% at or under $5,000, from a sample
+of one archive. Both were too high: the sample skewed large, and 95,477
+duplicated rows were removed afterwards. The corrected distribution makes the
+premise stronger rather than weaker, since more than three grants in five are for
+$5,000 or less.
 
 Five of the 49 archives are compressed with deflate64, which Python's `zipfile`
 cannot decode and which libarchive misreports as a damaged archive. They hold

@@ -5,11 +5,19 @@
 **Author:** Johnny Klaus
 
 > The estimates in "Verified data foundation" below were taken from a single
-> archive before the corpus was built. The built corpus is roughly twice as
-> large: **562,413 filings, 142,806 foundations, 8,483,757 grant records**. The
-> per-record structure, the grant-size distribution, and the boilerplate rate all
-> held. The scale estimate did not, and the openness ratio did not survive
-> validation intact — both are recorded in `docs/validation.md`.
+> archive before the corpus was built, and several of them turned out to be
+> wrong. The built corpus is **562,413 filings, 142,806 foundations, 8,388,280
+> grant records**, roughly twice the projected scale.
+>
+> What held: the per-record structure, and the claim that the small-money layer
+> is abundant. What did not: the median grant is **$2,500**, not $5,000, and
+> **63.9%** of grants are $5,000 or less rather than 55.6%. Boilerplate purpose
+> text runs at **37.7%**, not 31.2%. The single-archive sample skewed large, and
+> 95,477 duplicated grant rows were removed after it was taken. The openness
+> ratio did not survive validation intact.
+>
+> Corrected figures, and everything measured since, are in
+> `docs/validation.md`. This document is left as it was written.
 
 ## Problem
 
