@@ -74,7 +74,8 @@ def foundation_profile(data_dir: str, ein: str) -> dict | None:
         SELECT ein, name, city, state, declared_closed, has_application_info,
                app_deadlines, app_restrictions, app_contact_name,
                grant_count, median_grant, min_grant, max_grant, p25_grant, p75_grant,
-               total_granted, individual_share, top_state, top_state_share,
+               total_granted, individual_share, person_share, unresolved_share,
+               top_state, top_state_share,
                states_funded, last_year, openness_ratio, total_assets_eoy, top_ntee
         FROM foundation_signals WHERE ein = ?
         """,
@@ -176,6 +177,7 @@ def _rule_findings(profile: dict, ask: dict) -> list[Finding]:
 
     restrictions = (profile.get("app_restrictions") or "").strip()
     share = profile.get("individual_share")
+    person = profile.get("person_share")
     grants = profile.get("grant_count") or 0
     excludes_individuals = bool(restrictions and _EXCLUDES_INDIVIDUALS.search(restrictions))
 
@@ -215,6 +217,18 @@ def _rule_findings(profile: dict, ask: dict) -> list[Finding]:
                     "than an organization.",
                 )
             )
+        elif person is not None and grants >= 10 and person > 0.9:
+            # The filer typed people into the business-name field, so the
+            # individual share reads 0. The names are still people.
+            findings.append(
+                Finding(
+                    "serious",
+                    "Its grants appear to go to individuals, not organizations.",
+                    f"{person:.0%} of its {grants} recipients are named like people "
+                    "rather than organizations, though the filing does not mark them "
+                    "as individual grants.",
+                )
+            )
     else:
         # The converse case had no check at all, so an individual asking a
         # foundation whose filing reads "NO GRANTS TO INDIVIDUALS" was told there
@@ -227,12 +241,38 @@ def _rule_findings(profile: dict, ask: dict) -> list[Finding]:
                     f'Restrictions on its filing: "{restrictions[:200]}"',
                 )
             )
-        elif share is not None and grants >= 20 and share == 0:
+        elif person is not None and grants >= 10 and person > 0.5:
+            # Do not tell an individual to stay away from a scholarship fund.
             findings.append(
                 Finding(
-                    "disqualifying",
-                    "It has never recorded a grant to an individual.",
-                    f"All {grants} of its recorded grants name an organization.",
+                    "worth_checking",
+                    "It appears to fund individuals, which is what you are.",
+                    f"{person:.0%} of its {grants} recipients are named like people. "
+                    "The filing does not mark them as individual grants, so confirm "
+                    "before relying on it.",
+                )
+            )
+        elif share is not None and grants >= 20 and share == 0:
+            # Asserting "never" from a record that is 40% unresolved corpus-wide
+            # overstates what the filings support. The claim is only disqualifying
+            # when the recipients are actually identified; otherwise it is a lead.
+            unresolved = profile.get("unresolved_share")
+            confident = (
+                (unresolved is not None and unresolved < 0.25)
+                and (person is not None and person < 0.05)
+            )
+            findings.append(
+                Finding(
+                    "disqualifying" if confident else "worth_checking",
+                    "It has no record of a grant to an individual."
+                    if confident
+                    else "No grant to an individual appears in its record, but the "
+                    "record is incomplete.",
+                    f"All {grants} of its recorded grants name an organization."
+                    if confident
+                    else f"None of its {grants} grants is marked as going to an "
+                    f"individual, but {(unresolved or 0):.0%} of its recipients "
+                    "could not be identified.",
                 )
             )
 

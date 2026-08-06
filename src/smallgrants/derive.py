@@ -11,6 +11,38 @@ from __future__ import annotations
 
 import statistics
 
+# Words that mark a recipient name as an organization. Used only to decide
+# whether an *unresolved* name has the shape of a person's name.
+_ORG_WORDS = """FOUNDATION INC INCORPORATED TRUST CHURCH UNIVERSITY COLLEGE SCHOOL
+ACADEMY ASSOCIATION ASSN SOCIETY CENTER CENTRE COUNCIL FUND CLUB CORP CORPORATION
+COMPANY INSTITUTE MUSEUM LIBRARY HOSPITAL CLINIC MINISTRIES MINISTRY MISSION TEMPLE
+SYNAGOGUE PARISH DIOCESE CATHEDRAL CHAPEL ALLIANCE COALITION NETWORK PROJECT PROGRAM
+SERVICES SERVICE ORGANIZATION ORG LLC LTD DEPT DEPARTMENT CITY TOWN COUNTY STATE
+DISTRICT BOARD COMMITTEE COMMISSION AUTHORITY AGENCY AMERICAN NATIONAL INTERNATIONAL
+UNITED FRIENDS HOUSE HOME CARE HEALTH MEDICAL CANCER CHILDRENS CHILDREN YOUTH FAMILY
+FAMILIES ARTS ART MUSIC THEATRE THEATER ORCHESTRA BALLET OPERA PUBLIC RADIO
+TELEVISION PRESS SCOUTS SCOUT LEAGUE SEMINARY YMCA YWCA SPCA HUMANE ANIMAL RESCUE
+HOSPICE RELIEF GROUP PARTNERS PARTNERSHIP ENTERPRISES INDUSTRIES SYSTEMS SOLUTIONS
+INSTITUTION ST SAINT THE OF AND FOR A AN""".split()
+
+
+def person_shape_sql(col: str = "recipient_name") -> str:
+    """SQL for "this unresolved recipient name has the shape of a person's name".
+
+    Filers routinely type a person into the business-name field, so
+    `recipient_is_person` misses them: a scholarship trust paying "BRUCE SIMON"
+    and "WILLIAM TYLER" was recorded as 0% individuals. Two or three alphabetic
+    tokens with no organization word is the discriminating shape. Measured
+    against 3.9M recipients matched to the IRS business master file, it
+    misfires on 0.001% of them.
+    """
+    return f"""(
+        {col} IS NOT NULL
+        AND NOT regexp_matches({col}, '[0-9&/,]')
+        AND array_length(str_split(trim(upper({col})), ' ')) BETWEEN 2 AND 3
+        AND NOT list_has_any(str_split(trim(upper({col})), ' '), {_ORG_WORDS!r})
+    )"""
+
 
 def derive(data_dir: str) -> dict:
     from smallgrants.store import connect
@@ -62,6 +94,14 @@ def derive(data_dir: str) -> dict:
                 quantile_cont(amount, 0.25) FILTER (WHERE amount IS NOT NULL)                     AS p25_grant,
                 quantile_cont(amount, 0.75) FILTER (WHERE amount IS NOT NULL)                     AS p75_grant,
                 avg(CASE WHEN is_individual THEN 1.0 ELSE 0.0 END) AS individual_share,
+                -- individual_share only counts recipients the filer put in the
+                -- person field. person_share adds unresolved names shaped like a
+                -- person's, which is how scholarship trusts actually file.
+                avg(CASE WHEN is_individual
+                          OR (resolution_tier = 'unresolved' AND """ + person_shape_sql() + """)
+                         THEN 1.0 ELSE 0.0 END)                 AS person_share,
+                avg(CASE WHEN resolution_tier = 'unresolved' THEN 1.0 ELSE 0.0 END)
+                                                                AS unresolved_share,
                 count(DISTINCT recipient_state)                 AS states_funded
             FROM grants g
             GROUP BY ein
@@ -106,7 +146,8 @@ def derive(data_dir: str) -> dict:
             s.first_year, s.last_year, s.years_filed,
             g.grant_count, g.grant_years, g.median_grant, g.min_grant, g.max_grant,
             g.total_granted, g.p25_grant, g.p75_grant,
-            g.individual_share, g.states_funded, geo.top_state, geo.top_state_share,
+            g.individual_share, g.person_share, g.unresolved_share,
+            g.states_funded, geo.top_state, geo.top_state_share,
             c.top_ntee, c.ntee_variety, c.ntee_coverage
         FROM foundation_latest l
         LEFT JOIN gstats      g ON g.ein = l.ein

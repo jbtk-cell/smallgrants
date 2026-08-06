@@ -160,6 +160,59 @@ def test_unknown_openness_does_not_score_top():
     assert best <= 1.0
 
 
+# --- people typed into the business-name field ------------------------------
+#
+# `individual_share` only counts recipients the filer put in the person field.
+# Scholarship trusts routinely type the student into the business field, so the
+# Myra Deane Memorial Trust -- ten grants, every one to a named person -- was
+# recorded as 0% individuals. 869 foundations and 25,083 grants are affected.
+
+
+def scholarship_trust(**over):
+    """Recorded as 0% individuals; every recipient is actually a person."""
+    p = {
+        "app_restrictions": "", "individual_share": 0.0, "person_share": 0.95,
+        "unresolved_share": 0.95, "grant_count": 40, "declared_closed": False,
+        "has_application_info": True, "last_year": 2025,
+    }
+    p.update(over)
+    return p
+
+
+def test_individual_is_not_turned_away_from_a_scholarship_trust():
+    """The critic said "It has never recorded a grant to an individual" -- a
+    disqualifying verdict -- to an individual asking a fund that gives to
+    nothing but individuals."""
+    findings = _rule_findings(
+        scholarship_trust(), {"applicant_type": "individual", "state": "MD"}
+    )
+    assert "disqualifying" not in [f.severity for f in findings]
+    assert "Do not send" not in _verdict_from(findings)
+    assert any("fund individuals" in f.claim for f in findings)
+
+
+def test_organization_is_warned_about_a_scholarship_trust():
+    findings = _rule_findings(
+        scholarship_trust(), {"applicant_type": "organization", "state": "MD"}
+    )
+    assert severities(findings, "go to individuals") == ["serious"]
+
+
+def test_never_funded_an_individual_needs_an_identified_record():
+    """Asserting a negative from a record that is 40% unidentified overstates
+    what the filing supports."""
+    murky = scholarship_trust(person_share=0.0, unresolved_share=0.6, grant_count=30)
+    assert severities(murky := _rule_findings(
+        murky, {"applicant_type": "individual", "state": "MD"}), "record is incomplete"
+    ) == ["worth_checking"]
+
+    clear = scholarship_trust(person_share=0.0, unresolved_share=0.05, grant_count=30)
+    assert severities(
+        _rule_findings(clear, {"applicant_type": "individual", "state": "MD"}),
+        "no record of a grant to an individual",
+    ) == ["disqualifying"]
+
+
 # --- the model could overwrite what the foundation filed about itself --------
 
 OPTIMISTIC = "This is a strong fit. Send it."

@@ -209,3 +209,48 @@ result-set DoS.
   recipient NTEE codes for those.
 - 990-PF only. Public charities that make grants (Form 990 Schedule I) are absent.
 - DuckDB allows a single writer, so the site is unavailable while a rebuild runs.
+
+## People typed into the business-name field
+
+Found by driving the finished app, not by review. A Maryland search returned The
+Myra Deane Memorial Trust with recipients BRUCE SIMON, WILLIAM TYLER, KAREN
+DAVIS — and `individual_share = 0.0`.
+
+`recipient_is_person` reflects which XML field the filer used. The earlier fix
+handled organizations typed into the *person* field. The mirror case was
+unhandled: a person typed into the *business* field is recorded as an
+unidentified organization. Scholarship trusts file this way routinely.
+
+The consequence was the worst class of wrong answer this product can give. For an
+individual applicant the critic fired **"It has never recorded a grant to an
+individual"** at disqualifying severity — telling a student not to apply to a
+fund that gives to nothing but students. **803 foundations and 24,683 grants**
+were affected, including the American Academy of Arts and Letters (fellowships to
+named writers and composers), the Koch Family Foundation and the Hagerty Drivers
+Foundation (both scholarships).
+
+Two changes:
+
+- **A person-shape signal.** An unresolved recipient name of two or three
+  alphabetic tokens containing no organization word is treated as a person.
+  Measured against the 3,941,142 recipients matched to the IRS business master
+  file, it misfires on **31 of them (0.001%)**. It calibrates cleanly against the
+  cases already known: foundations whose recorded individual share is 90–100%
+  score a mean person-shape of 0.989; those at 0–10% score 0.086.
+
+  A given-name lexicon derived from the corpus was tried first and rejected — the
+  same 0.001% precision, but only 5.2% recall, recovering 0.3% of unresolved
+  grants. Shape alone is the stronger signal.
+
+- **The negative claim now requires an identified record.** "Never funded an
+  individual" was asserted from a corpus that is 40.2% unresolved. It is only
+  disqualifying when under 25% of that foundation's recipients are unidentified
+  and none are person-shaped; otherwise it is reported as a lead, and states the
+  unidentified share rather than hiding it.
+
+An individual asking the Myra Deane trust now gets "No disqualifying problem
+found" and "It appears to fund individuals, which is what you are."
+
+**The general lesson: this product asserts negatives from an incomplete record.
+Every "it has never" claim needs the same treatment — the absence of evidence in
+a 40%-unresolved corpus is not evidence of absence.**
