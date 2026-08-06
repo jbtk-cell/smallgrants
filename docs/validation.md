@@ -130,10 +130,17 @@ ENVIRONMENTAL. It publishes a deadline, which the review surfaces.
 
 The same foundation, asked for $500,000 from Texas, is refused: the ask exceeds
 its largest recorded grant of $6,835 (disqualifying), 100% of its giving is in
-Connecticut (serious), and its filed restrictions name Connecticut (serious). An
-individual asking it for $3,000 is also refused — all 60 of its recorded grants
-name an organization. Every one of these findings is produced without a model
-call, and each quotes the filing text it came from.
+Connecticut (serious), and its filed restrictions name Connecticut (serious).
+
+An individual asking it for $3,000 is *not* refused, and that is the corrected
+behaviour: none of its 60 grants is marked as going to an individual, but 58% of
+its recipients could not be identified, so the finding reads "No grant to an
+individual appears in its record, but the record is incomplete" at
+worth-checking rather than disqualifying — and says 58% out loud. See "People
+typed into the business-name field" below.
+
+Every one of these findings is produced without a model call, and each quotes the
+filing text it came from.
 
 ## The verdict could still read gentler than the record
 
