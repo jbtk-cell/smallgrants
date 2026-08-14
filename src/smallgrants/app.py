@@ -10,6 +10,7 @@ from __future__ import annotations
 
 import logging
 import os
+import threading
 import time
 from collections import deque
 
@@ -42,6 +43,52 @@ MAX_PROJECT = 4000  # a funding ask, not an essay
 LLM_CALLS_PER_HOUR = 30
 _llm_calls: deque[float] = deque()
 
+# A search embeds the query and scans 8.4M grant rows: roughly 0.8s of CPU on one
+# core. There is no login to rate limit, so the expensive path is search itself,
+# and a single unthrottled script can hold the site down. Counted per address.
+SEARCHES_PER_MINUTE = 20
+SEARCH_BURST_WINDOW = 60.0
+_searches: dict[str, deque[float]] = {}
+_search_lock = threading.Lock()
+
+TOO_MANY_SEARCHES = (
+    "Too many searches from this address in the last minute. Wait a moment and "
+    "try again."
+)
+
+
+def client_key(request: Request) -> str:
+    """The caller's address, trusting a proxy header only when told to.
+
+    Behind Fly or any reverse proxy the socket address is the proxy, so every
+    visitor would share one bucket and the first busy minute would lock out
+    everybody. Reading the header unconditionally is worse: anyone could forge it
+    and bypass the limit entirely. So it is read only when the deployment says a
+    trusted proxy is in front.
+    """
+    if os.environ.get("SMALLGRANTS_TRUST_PROXY") == "1":
+        fwd = request.headers.get("x-forwarded-for", "")
+        if fwd:
+            return fwd.split(",")[0].strip()[:64]
+    return getattr(getattr(request, "client", None), "host", "") or "unknown"
+
+
+def search_rate_limited(key: str) -> bool:
+    now = time.monotonic()
+    with _search_lock:
+        hits = _searches.setdefault(key, deque())
+        while hits and now - hits[0] > SEARCH_BURST_WINDOW:
+            hits.popleft()
+        # Drop buckets that have gone quiet, so the dict cannot grow without
+        # bound on a site that gets crawled.
+        if len(_searches) > 4096:
+            for k in [k for k, v in _searches.items() if not v or now - v[-1] > 300]:
+                _searches.pop(k, None)
+        if len(hits) >= SEARCHES_PER_MINUTE:
+            return True
+        hits.append(now)
+        return False
+
 
 @app.middleware("http")
 async def security_headers(request: Request, call_next):
@@ -52,6 +99,20 @@ async def security_headers(request: Request, call_next):
         "default-src 'none'; style-src 'unsafe-inline'; form-action 'self'; "
         "base-uri 'none'; frame-ancestors 'none'"
     )
+    # frame-ancestors already covers framing for anything current; this is for
+    # browsers that predate it.
+    response.headers["X-Frame-Options"] = "DENY"
+    response.headers["Cross-Origin-Opener-Policy"] = "same-origin"
+    response.headers["Permissions-Policy"] = (
+        "geolocation=(), microphone=(), camera=(), payment=(), usb=(), "
+        "interest-cohort=()"
+    )
+    # Only over TLS. Sending HSTS on a plain-HTTP local run would pin localhost
+    # to HTTPS in the developer's browser and break every other project on it.
+    if request.url.scheme == "https" or request.headers.get("x-forwarded-proto") == "https":
+        response.headers["Strict-Transport-Security"] = (
+            "max-age=31536000; includeSubDomains"
+        )
     return response
 
 
@@ -116,7 +177,12 @@ def index(
     closed = _flag(include_closed)
     results, error = [], None
 
-    if q:
+    if q and search_rate_limited(client_key(request)):
+        error = TOO_MANY_SEARCHES
+        # Logged separately so a wave of throttling is visible in `stats` rather
+        # than looking like a drop in traffic.
+        usage.record(data_dir(), "throttled", request, query=q, state=state)
+    elif q:
         try:
             from smallgrants.match import search
 

@@ -175,6 +175,7 @@ def main(argv: list[str] | None = None) -> int:
         print(f"{'searches':<28}{t['searches'] or 0:>10,}")
         print(f"{'foundation pages opened':<28}{t['foundation_views'] or 0:>10,}")
         print(f"{'reviews run':<28}{t['reviews'] or 0:>10,}")
+        print(f"{'searches throttled':<28}{t['throttled'] or 0:>10,}")
         print(f"{'distinct visitors':<28}{t['visitors'] or 0:>10,}")
         print(f"{'days with any traffic':<28}{t['days_live'] or 0:>10,}")
         print(f"{'bot requests excluded':<28}{s['bots_excluded']:>10,}")

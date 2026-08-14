@@ -142,10 +142,16 @@ def stats(data_dir: str, days: int = 30, include_bots: bool = False) -> dict:
     out: dict = {}
     out["totals"] = dict(
         zip(
-            ["searches", "foundation_views", "reviews", "visitors", "days_live"],
+            ["searches", "foundation_views", "reviews", "throttled",
+             "visitors", "days_live"],
             q(
+                # coalesce: sum() over no rows is NULL, and a usage report that
+                # prints None where it means zero is a report nobody trusts.
                 f"""SELECT
-                      sum(event='search'), sum(event='foundation'), sum(event='review'),
+                      coalesce(sum(event='search'), 0),
+                      coalesce(sum(event='foundation'), 0),
+                      coalesce(sum(event='review'), 0),
+                      coalesce(sum(event='throttled'), 0),
                       count(DISTINCT visitor), count(DISTINCT day)
                     FROM events {where}"""
             )[0],
@@ -176,7 +182,7 @@ def stats(data_dir: str, days: int = 30, include_bots: bool = False) -> dict:
     # The share of searches that returned nothing. A high number means the corpus
     # is failing the people who showed up, which no visit count would reveal.
     row = q(
-        f"""SELECT count(*), sum(results = 0) FROM events
+        f"""SELECT count(*), coalesce(sum(results = 0), 0) FROM events
             WHERE event='search' AND results IS NOT NULL {andw}"""
     )[0]
     out["empty_searches"] = {"searches": row[0] or 0, "returned_nothing": row[1] or 0}

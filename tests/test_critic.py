@@ -293,3 +293,37 @@ def test_include_closed_flag(raw, expected):
     from smallgrants.app import _flag
 
     assert _flag(raw) is expected
+
+
+# --- pre-launch security checks ---------------------------------------------
+#
+# There is no login on this site, so the expensive path is search itself: each
+# one embeds the query and scans 8.4M rows, roughly 0.8s of CPU. Unthrottled,
+# one script holds the site down.
+
+
+def test_search_rate_limit_trips_and_is_per_address():
+    from smallgrants import app as A
+
+    A._searches.clear()
+    allowed = [not A.search_rate_limited("1.2.3.4") for _ in range(A.SEARCHES_PER_MINUTE)]
+    assert all(allowed)
+    assert A.search_rate_limited("1.2.3.4") is True
+    # A different visitor is unaffected by the first one's burst.
+    assert A.search_rate_limited("5.6.7.8") is False
+    A._searches.clear()
+
+
+def test_proxy_header_is_ignored_unless_the_deployment_opts_in(monkeypatch):
+    """Trusting x-forwarded-for by default lets anyone forge it and skip the
+    limit. Ignoring it behind a proxy puts every visitor in one bucket."""
+    from smallgrants import app as A
+
+    class R:
+        headers = {"x-forwarded-for": "9.9.9.9"}
+        client = type("C", (), {"host": "10.0.0.1"})()
+
+    monkeypatch.delenv("SMALLGRANTS_TRUST_PROXY", raising=False)
+    assert A.client_key(R()) == "10.0.0.1"
+    monkeypatch.setenv("SMALLGRANTS_TRUST_PROXY", "1")
+    assert A.client_key(R()) == "9.9.9.9"
