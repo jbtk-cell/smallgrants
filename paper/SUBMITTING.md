@@ -9,7 +9,8 @@ reason is worth understanding.
 - **ORCID.** `paper.md` carries a placeholder. Register at orcid.org, which takes
   a few minutes, and replace it. JOSS expects one.
 - **Affiliation.** Confirm how you want to be listed.
-- **Repository URL** in `CITATION.cff`, currently `USERNAME`.
+- **Repository URL** in `CITATION.cff`, set to `jbtk-cell/smallgrants`. Change it
+  if you publish under a different account or name.
 
 ## Where this may fail review
 

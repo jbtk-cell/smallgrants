@@ -6,7 +6,7 @@ authors:
   - family-names: Klaus
     given-names: Johnny
 license: MIT
-repository-code: "https://github.com/USERNAME/smallgrants"
+repository-code: "https://github.com/jbtk-cell/smallgrants"
 abstract: >-
   A reproducible pipeline that turns IRS Form 990-PF bulk XML into a searchable
   index of 8,388,280 grant records from 142,806 US private foundations, with a
