@@ -15,10 +15,15 @@ import time
 from collections import deque
 
 from fastapi import FastAPI, Form, Request
-from fastapi.responses import HTMLResponse
+from fastapi.responses import (
+    FileResponse,
+    HTMLResponse,
+    PlainTextResponse,
+    Response,
+)
 from fastapi.templating import Jinja2Templates
 
-from smallgrants import usage
+from smallgrants import seo, usage
 
 log = logging.getLogger("smallgrants")
 
@@ -212,6 +217,13 @@ def index(
             "q": q, "state": state, "zip3": zip3, "amount": _clean(amount, 12),
             "applicant": applicant, "include_closed": closed,
             "results": results, "error": error, "summary": corpus_summary(),
+            "meta": seo.meta(
+                "/",
+                f"{q[:60]} — funders — SmallGrants" if q else
+                "SmallGrants — find US foundations that fund work like yours",
+                seo.DESCRIPTION,
+            ),
+            "jsonld": seo.dataset_jsonld(),
         },
     )
 
@@ -232,8 +244,85 @@ def _foundation_page(request: Request, ein: str, critique=None, ask=None, thanks
             "profile": profile, "ein": ein, "critique": critique,
             "ask": ask or {}, "error": error, "summary": corpus_summary(),
             "thanks": thanks,
+            "meta": seo.meta(
+                f"/f/{ein}",
+                f"{profile['name']} — grants it has paid — SmallGrants"
+                if profile else f"{ein} — SmallGrants",
+                seo.foundation_description(profile) if profile else seo.DESCRIPTION,
+            ),
+            "jsonld": seo.foundation_jsonld(ein, profile) if profile else None,
         },
     )
+
+
+STATIC = os.path.join(BASE, "static")
+_sitemap_cache: dict[str, str] = {}
+
+
+@app.exception_handler(404)
+async def not_found(request: Request, exc):
+    """A JSON body reading {"detail":"Not Found"} is the framework's default and
+    tells a visitor nothing. Foundation URLs get mistyped and shared broken."""
+    return templates.TemplateResponse(
+        request,
+        "404.html",
+        {
+            "summary": corpus_summary(),
+            "meta": seo.meta("/404", "Page not found — SmallGrants", seo.DESCRIPTION),
+        },
+        status_code=404,
+    )
+
+
+@app.get("/favicon.svg", include_in_schema=False)
+def favicon_svg():
+    return FileResponse(
+        os.path.join(STATIC, "favicon.svg"), media_type="image/svg+xml",
+        headers={"Cache-Control": "public, max-age=86400"},
+    )
+
+
+@app.get("/favicon.ico", include_in_schema=False)
+def favicon_ico():
+    # Browsers and crawlers request this path whatever the markup says.
+    return favicon_svg()
+
+
+@app.get("/og.png", include_in_schema=False)
+def og_image():
+    return FileResponse(
+        os.path.join(STATIC, "og.png"), media_type="image/png",
+        headers={"Cache-Control": "public, max-age=86400"},
+    )
+
+
+@app.get("/robots.txt", include_in_schema=False)
+def robots():
+    return PlainTextResponse(seo.robots())
+
+
+@app.get("/llms.txt", include_in_schema=False)
+def llms():
+    return PlainTextResponse(seo.llms_txt())
+
+
+@app.get("/sitemap.xml", include_in_schema=False)
+def sitemap():
+    """Foundations with a published way to apply, plus the fixed pages.
+
+    Listing all 142,806 foundation pages would submit a great many that carry a
+    name and nothing else. The ones worth indexing are those that published
+    application information, because those are the pages that answer the question
+    someone typed into a search engine.
+    """
+    key = seo.site_url()
+    if key not in _sitemap_cache:
+        try:
+            _sitemap_cache[key] = seo.build_sitemap(data_dir())
+        except Exception:
+            log.exception("sitemap build failed")
+            return PlainTextResponse("", status_code=503)
+    return Response(_sitemap_cache[key], media_type="application/xml")
 
 
 @app.post("/f/{ein}/applying", response_class=HTMLResponse)
@@ -256,7 +345,17 @@ def applying(request: Request, ein: str, knew: str = Form("")):
 @app.get("/method", response_class=HTMLResponse)
 def method(request: Request):
     return templates.TemplateResponse(
-        request, "method.html", {"summary": corpus_summary()}
+        request,
+        "method.html",
+        {
+            "summary": corpus_summary(),
+            "meta": seo.meta(
+                "/method",
+                "How SmallGrants works, and what it cannot tell you",
+                "Where the data comes from, what 40% unresolved recipients means, "
+                "and which of the original ideas failed when it was tested.",
+            ),
+        },
     )
 
 

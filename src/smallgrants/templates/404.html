@@ -1,0 +1,26 @@
+{% extends "base.html" %}
+{% block content %}
+
+<h2>That page is not here</h2>
+
+<p class="notes" style="margin-left:0; max-width:44rem">
+  Foundation pages live at <span style="font-family:var(--mono)">/f/</span> followed
+  by the EIN, with no dash. If you followed a link to a foundation and landed here,
+  the EIN may be mistyped, or that foundation may not have filed a 990-PF in the
+  years this corpus covers.
+</p>
+
+<form class="query" method="get" action="/">
+  <label class="field">
+    <span>Search instead</span>
+    <input type="text" name="q" placeholder="What is the money for" autofocus>
+  </label>
+  <button type="submit">Find funders</button>
+</form>
+
+<p class="notes" style="margin-left:0">
+  <a href="/">Start over</a> &middot;
+  <a href="/method">How this works, and what it cannot tell you</a>
+</p>
+
+{% endblock %}

@@ -376,3 +376,67 @@ def test_usage_log_written_before_the_column_existed_still_works(tmp_path):
     con.close()
     usage.record(d, "applying", None, ein="111", already_knew=0)
     assert usage.stats(d, include_bots=True)["discovery"]["funder_was_new_to_them"] == 1
+
+
+# --- things only a machine reading the page from outside can see -------------
+
+
+def test_robots_blocks_crawlers_until_a_real_site_url_is_set(monkeypatch):
+    """A canonical link or sitemap pointing at 127.0.0.1 is worse than none, and
+    a dev box should never invite a crawler."""
+    from smallgrants import seo
+
+    monkeypatch.delenv("SMALLGRANTS_SITE_URL", raising=False)
+    assert "Disallow: /" in seo.robots()
+    assert "Sitemap:" not in seo.robots()
+
+    monkeypatch.setenv("SMALLGRANTS_SITE_URL", "https://example.org")
+    r = seo.robots()
+    assert "Allow: /" in r
+    assert "Sitemap: https://example.org/sitemap.xml" in r
+    assert seo.absolute("/f/123") == "https://example.org/f/123"
+
+
+def test_ai_crawlers_are_not_blocked(monkeypatch):
+    """Deliberate. People ask assistants where to look for funding."""
+    from smallgrants import seo
+
+    monkeypatch.setenv("SMALLGRANTS_SITE_URL", "https://example.org")
+    r = seo.robots().lower()
+    for bot in ("gptbot", "claudebot", "ccbot", "google-extended", "perplexitybot"):
+        assert f"user-agent: {bot}" not in r
+
+
+def test_each_foundation_gets_its_own_description():
+    """One description repeated across 142,806 pages is the tell this checks."""
+    from smallgrants import seo
+
+    a = seo.foundation_description(
+        {"name": "ALPHA TRUST", "city": "Boise", "state": "ID",
+         "grant_count": 12, "median_grant": 2500, "declared_closed": True}
+    )
+    b = seo.foundation_description(
+        {"name": "BETA FUND", "city": "Reno", "state": "NV",
+         "grant_count": 400, "median_grant": 10000, "has_application_info": True}
+    )
+    assert a != b
+    assert "ALPHA TRUST" in a and "Boise, ID" in a and "12 grants" in a
+    assert "accepts no unsolicited requests" in a
+    assert "publishes application information" in b
+    assert len(a) < 300
+
+
+def test_foundation_structured_data_states_only_filed_facts():
+    """Schema.org markup must not assert anything the 990-PF does not."""
+    from smallgrants import seo
+
+    node = seo.foundation_jsonld(
+        "123456789",
+        {"name": "ALPHA TRUST", "city": "Boise", "state": "ID",
+         "grant_count": 12, "openness_ratio": 0.9},
+    )
+    assert node["@type"] == "Organization"
+    assert node["identifier"]["value"] == "123456789"
+    blob = str(node).lower()
+    for invented in ("openness", "score", "rank", "rating", "recommend"):
+        assert invented not in blob

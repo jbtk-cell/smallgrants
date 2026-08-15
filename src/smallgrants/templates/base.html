@@ -3,7 +3,23 @@
 <head>
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1">
-<title>{% block title %}SmallGrants{% endblock %}</title>
+<title>{{ meta.title if meta else "SmallGrants" }}</title>
+{% if meta %}
+<meta name="description" content="{{ meta.description }}">
+<link rel="canonical" href="{{ meta.canonical }}">
+<meta property="og:site_name" content="SmallGrants">
+<meta property="og:type" content="website">
+<meta property="og:title" content="{{ meta.title }}">
+<meta property="og:description" content="{{ meta.description }}">
+<meta property="og:url" content="{{ meta.canonical }}">
+<meta property="og:image" content="{{ meta.og_image }}">
+<meta property="og:image:width" content="1200">
+<meta property="og:image:height" content="630">
+<meta property="og:image:alt" content="SmallGrants: an open index of US foundation giving, built from IRS Form 990-PF filings.">
+<meta name="twitter:card" content="summary_large_image">
+{% endif %}
+<link rel="icon" href="/favicon.svg" type="image/svg+xml">
+{% if jsonld %}<script type="application/ld+json">{{ jsonld | tojson }}</script>{% endif %}
 <style>
 :root {
   --paper:   #F2F4EF;
