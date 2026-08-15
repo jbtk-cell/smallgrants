@@ -270,3 +270,34 @@ found" and "It appears to fund individuals, which is what you are."
 **The general lesson: this product asserts negatives from an incomplete record.
 Every "it has never" claim needs the same treatment — the absence of evidence in
 a 40%-unresolved corpus is not evidence of absence.**
+
+## Competitive check, done late
+
+The design was written without surveying what already existed, which was a
+mistake. Checked properly in August 2026:
+
+**[Grantmakers.io](https://www.grantmakers.io/)** is free, open source, actively
+maintained, and built on the same IRS 990-PF electronic filings. It searches
+foundation profiles by name and grants by recipient name and location. Its
+foundation profiles already surface the Part XV preselected-only checkbox,
+application deadlines, restrictions, and an "possibly open to applications"
+indicator. An early assumption here that it did not expose the preselected flag
+was wrong, checked against a live profile.
+
+So the claim "nobody has made the 990-PF grant schedules searchable" is false and
+has been removed from the README. What remains genuinely different is narrower:
+matching from a prose description of the work rather than from a named peer
+organization, scoring the fit of the ask against the foundation's own grant size
+distribution, and reviewing a specific ask against the filing to produce
+disqualifying findings with quoted evidence.
+
+**Candid is free for much of the stated target market.** A 501(c)(3) under $1M in
+revenue can get Candid Premium at no cost through Go for Gold by earning a Gold
+Transparency Seal, and Funding Information Network libraries offer free Foundation
+Directory access. The README now says so and recommends those routes first for
+incorporated nonprofits.
+
+The audience that is actually unserved is narrower than "small nonprofits": groups
+with no 501(c)(3) status. Student organizations, unincorporated volunteer groups,
+fiscally sponsored projects, and individuals seeking scholarships or fellowships
+cannot use Go for Gold, because it requires a nonprofit profile they cannot hold.

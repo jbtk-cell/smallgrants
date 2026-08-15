@@ -4,14 +4,29 @@ An open index of US foundation giving, built from IRS Form 990-PF bulk filings.
 
 ## Why
 
-Most US nonprofits are tiny — no development staff, no CRM, no budget for funder
-research. The standard tool, Candid's Foundation Directory, costs $219+/month.
-Student groups and all-volunteer organizations are priced out.
-
 The underlying information is already public. Every private foundation files a
 Form 990-PF listing each grant it paid: recipient, address, purpose, and amount.
-The IRS publishes these as bulk XML. Almost nobody uses them, because the data
-arrives as 142 zip archives of raw XML. The barrier is tedium, not secrecy.
+The IRS publishes these as bulk XML. The barrier to using them is tedium, not
+secrecy.
+
+**Who this is actually for.** Candid's Foundation Directory lists at $219+/month,
+but that price is not what most small nonprofits pay. A registered 501(c)(3) with
+under $1M in revenue can get free Candid Premium through the Go for Gold program
+by earning a Gold Transparency Seal, and many public libraries offer free access
+through Candid's Funding Information Network. If you are an incorporated
+nonprofit, do that first. It is a better product than this one.
+
+What those routes require is a 501(c)(3) and a maintained public profile. Student
+groups, unincorporated volunteer groups, fiscally sponsored projects, mutual aid
+groups, and individuals seeking scholarships or fellowships have none of that and
+qualify for none of it. That is who this is for.
+
+**What else exists.** [Grantmakers.io](https://www.grantmakers.io/) is free, open
+source, well built, and already lets you search the same 990-PF data by foundation
+name or by grantee name and location. If you can name a peer organization that
+resembles yours, use it. This project differs in three specific ways, listed under
+"How this differs" below, and not in the general claim of making 990 data
+searchable. That was already done.
 
 ## What the data actually contains
 
@@ -36,6 +51,32 @@ joining recipients to their NTEE codes.
 The strongest filter is one the foundations hand over themselves: Part XV line 2
 of the 990-PF, where 70% declare that they fund only preselected organizations.
 Excluding them removes most of the noise before any ranking happens.
+
+## How this differs
+
+Three things, and it is worth being precise because the rest overlaps with tools
+that already exist.
+
+**You describe your work; you do not name a peer.** Existing 990 search tools
+match on a grantee's name or location, which means you have to already know an
+organization like yours that got funded. Here the query is a sentence about what
+you do, embedded and matched against what each foundation actually funded, with
+recipient NTEE codes filling in for the 37.7% of purpose fields that are
+boilerplate.
+
+**Size fit is scored, and mismatch is disqualifying.** A foundation whose largest
+grant in five years was $6,835 is not a prospect for a $50,000 ask, however well
+the cause matches. That comparison is made for every result.
+
+**Every funder is reviewed against your specific ask, and told to you as
+reasons.** This is the part nothing else does. Before you write anything, the
+review reads the foundation's own filing and returns findings with severity and a
+quotation: your ask exceeds their largest grant ever, their stated restrictions
+name a state that is not yours, they have never funded an individual, they filed
+that they accept no unsolicited requests. It is built to tell you **not** to
+apply, with the filing text that says so. Nothing is inferred that the record
+does not support, and where the record is too thin the review says that instead
+of guessing.
 
 ## Status
 
