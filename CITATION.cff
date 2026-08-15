@@ -1,0 +1,20 @@
+cff-version: 1.2.0
+title: "SmallGrants: an open index of US foundation giving from IRS Form 990-PF filings"
+message: "If you use this software or corpus, please cite it."
+type: software
+authors:
+  - family-names: Klaus
+    given-names: Johnny
+license: MIT
+repository-code: "https://github.com/USERNAME/smallgrants"
+abstract: >-
+  A reproducible pipeline that turns IRS Form 990-PF bulk XML into a searchable
+  index of 8,388,280 grant records from 142,806 US private foundations, with a
+  web application that ranks funders against a described project and reviews a
+  specific ask against each foundation's own filing.
+keywords:
+  - philanthropy
+  - nonprofit
+  - Form 990-PF
+  - open data
+  - entity resolution

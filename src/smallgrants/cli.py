@@ -188,6 +188,17 @@ def main(argv: list[str] | None = None) -> int:
             f"visitors who searched and then opened a funder   "
             f"{s['searchers_who_opened_a_funder']:,}"
         )
+        d = s["discovery"]
+        who = "person" if d["people"] == 1 else "people"
+        print(
+            f"\nself-reported: {d['people']:,} {who} said they would apply to "
+            f"{d['reported_applying']:,} funders,\n"
+            f"  of which {d['funder_was_new_to_them']:,} were new to them "
+            f"({d['distinct_funders_newly_found']:,} distinct funders)."
+        )
+        print(
+            "  Self-reported intent, not submitted applications. Say it that way."
+        )
         if s["by_day"]:
             print("\nday          visitors  searches  opened")
             for day, v, se, fo in s["by_day"]:

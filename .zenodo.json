@@ -1,0 +1,28 @@
+{
+  "title": "SmallGrants: an open index of US foundation giving from IRS Form 990-PF filings",
+  "description": "<p>A reproducible pipeline that turns the IRS Form 990-PF bulk XML archives into a searchable index of 8,388,280 grant records paid by 142,806 US private foundations, filing years 2022 to 2026, together with a web application that ranks funders against a described project by cause, geography and grant size, and reviews a specific ask against each foundation's own filing.</p><p>Includes measured validation of the corpus, entity resolution to the IRS Business Master File, and a record of what failed testing. See DATASHEET.md for composition, collection and limitations.</p>",
+  "upload_type": "software",
+  "license": "MIT",
+  "access_right": "open",
+  "creators": [
+    { "name": "Klaus, Johnny" }
+  ],
+  "keywords": [
+    "philanthropy",
+    "nonprofit",
+    "grant funding",
+    "Form 990-PF",
+    "IRS",
+    "open data",
+    "entity resolution",
+    "foundation giving"
+  ],
+  "related_identifiers": [
+    {
+      "identifier": "https://apps.irs.gov/pub/epostcard/990/xml/",
+      "relation": "isDerivedFrom",
+      "resource_type": "dataset",
+      "scheme": "url"
+    }
+  ]
+}

@@ -327,3 +327,52 @@ def test_proxy_header_is_ignored_unless_the_deployment_opts_in(monkeypatch):
     assert A.client_key(R()) == "10.0.0.1"
     monkeypatch.setenv("SMALLGRANTS_TRUST_PROXY", "1")
     assert A.client_key(R()) == "9.9.9.9"
+
+
+# --- the one field that separates reach from discovery ----------------------
+
+
+def test_applying_records_whether_the_funder_was_new(tmp_path):
+    """Without this answer the log can only ever say people visited. It cannot
+    be reconstructed later, so it is asked at the click or not at all."""
+    from smallgrants import usage
+
+    d = str(tmp_path)
+    usage.record(d, "applying", None, ein="111", already_knew=0)
+    usage.record(d, "applying", None, ein="222", already_knew=0)
+    usage.record(d, "applying", None, ein="111", already_knew=1)
+    s = usage.stats(d, include_bots=True)["discovery"]
+    assert s["reported_applying"] == 3
+    assert s["funder_was_new_to_them"] == 2
+    assert s["distinct_funders_newly_found"] == 2
+
+
+def test_unanswered_is_not_counted_as_new(tmp_path):
+    """A skipped question must not inflate the discovery number."""
+    from smallgrants import usage
+
+    d = str(tmp_path)
+    usage.record(d, "applying", None, ein="111", already_knew=None)
+    s = usage.stats(d, include_bots=True)["discovery"]
+    assert s["reported_applying"] == 1
+    assert s["funder_was_new_to_them"] == 0
+
+
+def test_usage_log_written_before_the_column_existed_still_works(tmp_path):
+    """An older log must migrate rather than throw on every request."""
+    import sqlite3
+
+    from smallgrants import usage
+
+    d = str(tmp_path)
+    con = sqlite3.connect(usage.db_path(d))
+    con.execute(
+        "CREATE TABLE events (id INTEGER PRIMARY KEY AUTOINCREMENT, ts TEXT NOT NULL,"
+        " day TEXT NOT NULL, event TEXT NOT NULL, visitor TEXT,"
+        " is_bot INTEGER NOT NULL DEFAULT 0, query TEXT, state TEXT, amount INTEGER,"
+        " applicant TEXT, results INTEGER, ein TEXT, source TEXT)"
+    )
+    con.commit()
+    con.close()
+    usage.record(d, "applying", None, ein="111", already_knew=0)
+    assert usage.stats(d, include_bots=True)["discovery"]["funder_was_new_to_them"] == 1

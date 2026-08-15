@@ -54,7 +54,12 @@ CREATE TABLE IF NOT EXISTS events (
     applicant TEXT,
     results   INTEGER,
     ein       TEXT,
-    source    TEXT
+    source    TEXT,
+    -- Self-reported, on the 'applying' event only. 1 = the visitor already knew
+    -- this funder, 0 = it was new to them, NULL = not asked or not answered.
+    -- This single field is the difference between reporting reach and reporting
+    -- discovery, and it cannot be reconstructed after the fact.
+    already_knew INTEGER
 );
 CREATE INDEX IF NOT EXISTS events_day     ON events(day);
 CREATE INDEX IF NOT EXISTS events_event   ON events(event);
@@ -70,6 +75,11 @@ def _connect(data_dir: str) -> sqlite3.Connection:
     con = sqlite3.connect(db_path(data_dir), timeout=5.0)
     con.execute("PRAGMA journal_mode=WAL")
     con.executescript(SCHEMA)
+    # A log written before this column existed must keep working rather than
+    # throw on every request.
+    cols = {r[1] for r in con.execute("PRAGMA table_info(events)")}
+    if "already_knew" not in cols:
+        con.execute("ALTER TABLE events ADD COLUMN already_knew INTEGER")
     return con
 
 
@@ -109,8 +119,8 @@ def record(data_dir: str, event: str, request=None, **fields) -> None:
             con.execute(
                 """INSERT INTO events
                    (ts, day, event, visitor, is_bot, query, state, amount,
-                    applicant, results, ein, source)
-                   VALUES (?,?,?,?,?,?,?,?,?,?,?,?)""",
+                    applicant, results, ein, source, already_knew)
+                   VALUES (?,?,?,?,?,?,?,?,?,?,?,?,?)""",
                 (
                     datetime.now(timezone.utc).isoformat(timespec="seconds"),
                     date.today().isoformat(),
@@ -124,6 +134,7 @@ def record(data_dir: str, event: str, request=None, **fields) -> None:
                     fields.get("results"),
                     fields.get("ein") or None,
                     fields.get("source") or None,
+                    fields.get("already_knew"),
                 ),
             )
     except Exception:
@@ -188,6 +199,22 @@ def stats(data_dir: str, days: int = 30, include_bots: bool = False) -> dict:
     out["empty_searches"] = {"searches": row[0] or 0, "returned_nothing": row[1] or 0}
     # Did anyone open a funder after searching? Without this, a visit count says
     # people arrived, not that the results were worth reading.
+    # The claim this log exists to support. "Reported applying" is self-reported
+    # intent, not a submitted application, and "new to them" is their answer, not
+    # a measurement. Both are stated that way wherever they are shown.
+    row = q(
+        f"""SELECT count(*),
+                   coalesce(sum(already_knew = 0), 0),
+                   count(DISTINCT visitor),
+                   count(DISTINCT CASE WHEN already_knew = 0 THEN ein END)
+            FROM events WHERE event='applying' {andw}"""
+    )[0]
+    out["discovery"] = {
+        "reported_applying": row[0],
+        "funder_was_new_to_them": row[1],
+        "people": row[2],
+        "distinct_funders_newly_found": row[3],
+    }
     out["searchers_who_opened_a_funder"] = q(
         f"""SELECT count(DISTINCT visitor) FROM events
             WHERE event='foundation' {andw}

@@ -216,7 +216,7 @@ def index(
     )
 
 
-def _foundation_page(request: Request, ein: str, critique=None, ask=None):
+def _foundation_page(request: Request, ein: str, critique=None, ask=None, thanks=None):
     from smallgrants.agents import foundation_profile
 
     try:
@@ -231,8 +231,26 @@ def _foundation_page(request: Request, ein: str, critique=None, ask=None):
         {
             "profile": profile, "ein": ein, "critique": critique,
             "ask": ask or {}, "error": error, "summary": corpus_summary(),
+            "thanks": thanks,
         },
     )
+
+
+@app.post("/f/{ein}/applying", response_class=HTMLResponse)
+def applying(request: Request, ein: str, knew: str = Form("")):
+    """One question, asked at the only moment its answer exists.
+
+    Whether a funder was already known cannot be measured from server logs and
+    cannot be reconstructed later, so it is asked here or never. Anonymous, no
+    email, no account. The answer is self-reported and is labelled that way
+    everywhere it is reported.
+    """
+    ein = _clean(ein, 12)
+    if search_rate_limited(client_key(request)):
+        return _foundation_page(request, ein, thanks="rate")
+    knew_flag = {"yes": 1, "no": 0}.get(knew.strip().lower())
+    usage.record(data_dir(), "applying", request, ein=ein, already_knew=knew_flag)
+    return _foundation_page(request, ein, thanks="ok")
 
 
 @app.get("/method", response_class=HTMLResponse)

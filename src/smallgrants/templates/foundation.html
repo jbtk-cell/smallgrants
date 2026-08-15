@@ -106,5 +106,38 @@
   {% endfor %}
 </div>
 
+<style>
+.applying { border: 1px solid var(--rule); background: var(--band-2);
+  padding: .9rem 1rem; margin-top: 2.5rem; }
+.applying h3 { font-family: var(--mono); font-size: .8rem; font-weight: 600;
+  margin: 0 0 .35rem; }
+.applying p { font-family: var(--mono); font-size: .72rem; color: var(--dim);
+  margin: 0 0 .7rem; line-height: 1.6; max-width: 44rem; }
+.applying button { font-family: var(--mono); font-size: .74rem; cursor: pointer;
+  background: var(--paper); color: var(--ink); border: 1px solid var(--ink);
+  padding: .4rem .8rem; margin: 0 .4rem .4rem 0; }
+.applying button:hover { background: var(--band); }
+.applying .done { color: var(--ink); }
+</style>
+
+<div class="applying">
+  {% if thanks == "ok" %}
+    <h3>Recorded. Good luck.</h3>
+    <p class="done">Nothing was stored that identifies you.</p>
+  {% elif thanks == "rate" %}
+    <h3>Not recorded</h3>
+    <p>Too many requests from your address just now. Nothing was saved.</p>
+  {% else %}
+    <h3>Are you going to apply here?</h3>
+    <p>Answering tells us whether this site is showing people funders they would
+      not have found otherwise, which is the only thing it can honestly claim to
+      do. No account, no email, nothing that identifies you. Skip it freely.</p>
+    <form method="post" action="/f/{{ ein }}/applying">
+      <button type="submit" name="knew" value="no">Yes, and this funder is new to me</button>
+      <button type="submit" name="knew" value="yes">Yes, but I already knew them</button>
+    </form>
+  {% endif %}
+</div>
+
 {% endif %}
 {% endblock %}
