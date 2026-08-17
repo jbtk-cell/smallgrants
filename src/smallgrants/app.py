@@ -145,6 +145,20 @@ def _clean(raw: str, limit: int) -> str:
     return (raw or "").strip()[:limit]
 
 
+def referral(request: Request, default: str = "") -> str:
+    """Where this visitor came from, when a link said so.
+
+    Outreach goes to a small number of umbrella organizations, each of which can
+    put the tool in front of hundreds. Without a tag on the link there is no way
+    to tell which of them actually sent anyone, and "we emailed 40 places and got
+    some traffic" is not a finding. Links carry ?from=<tag>; nothing about the
+    person is recorded, only which door they came through.
+    """
+    tag = (request.query_params.get("from") or "").strip()[:32]
+    tag = "".join(c for c in tag if c.isalnum() or c in "-_")
+    return tag or default
+
+
 def corpus_summary() -> dict:
     from smallgrants.store import summary
 
@@ -175,6 +189,9 @@ def index(
     applicant: str = "organization",
     include_closed: str = "",
 ):
+    # `from` is a Python keyword, so it is never a route parameter. referral()
+    # reads it off the query string, and FastAPI ignores parameters it does not
+    # declare.
     q = _clean(q, MAX_QUERY)
     state = _clean(state, 2).upper()
     zip3 = _clean(zip3, 3)
@@ -208,6 +225,7 @@ def index(
         usage.record(
             data_dir(), "search", request, query=q, state=state,
             amount=_int_or_none(amount), applicant=applicant, results=len(results),
+            source=referral(request),
         )
 
     return templates.TemplateResponse(
@@ -403,7 +421,7 @@ def scholarships(
         usage.record(
             data_dir(), "search", request, query=q, state=state,
             amount=_int_or_none(amount), applicant="individual",
-            results=len(results), source="scholarships",
+            results=len(results), source=referral(request, "scholarships"),
         )
 
     return templates.TemplateResponse(
@@ -447,7 +465,9 @@ def foundation(request: Request, ein: str):
     ein = _clean(ein, 12)
     usage.record(
         data_dir(), "foundation", request, ein=ein,
-        source="search" if "referer" in request.headers else "direct",
+        source=referral(
+            request, "search" if "referer" in request.headers else "direct"
+        ),
     )
     return _foundation_page(request, ein)
 

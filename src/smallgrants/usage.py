@@ -279,6 +279,14 @@ def stats(data_dir: str, days: int = 30, include_bots: bool = False) -> dict:
         "people": row[2],
         "distinct_funders_newly_found": row[3],
     }
+    # Which outreach actually sent people.
+    out["by_referral"] = q(
+        f"""SELECT source, count(DISTINCT visitor), count(*)
+            FROM events
+            WHERE source IS NOT NULL
+              AND source NOT IN ('search','direct','scholarships') {andw}
+            GROUP BY source ORDER BY 2 DESC LIMIT 20"""
+    )
     out["searchers_who_opened_a_funder"] = q(
         f"""SELECT count(DISTINCT visitor) FROM events
             WHERE event='foundation' {andw}

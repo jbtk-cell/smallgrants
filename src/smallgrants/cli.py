@@ -203,6 +203,10 @@ def main(argv: list[str] | None = None) -> int:
             print("\nday          visitors  searches  opened")
             for day, v, se, fo in s["by_day"]:
                 print(f"  {day}  {v or 0:>8,}  {se or 0:>8,}  {fo or 0:>6,}")
+        if s.get("by_referral"):
+            print("\nwhere they came from")
+            for src, people, hits in s["by_referral"]:
+                print(f"  {people:>5} people  {hits:>5} events  {src}")
         if s["top_queries"]:
             print("\nmost searched")
             for q, n in s["top_queries"]:
