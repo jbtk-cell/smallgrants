@@ -141,6 +141,34 @@ def _load(data_dir: str, model_name: str = DEFAULT_MODEL):
     return _MODEL, _VECS, _EINS
 
 
+def applicant_filter(for_individual: bool, alias: str = "f") -> str:
+    """Who this foundation pays, as a SQL predicate.
+
+    `individual_share` counts only recipients the filer put in the person field.
+    Scholarship trusts routinely type the student into the business-name field
+    instead, so filtering on it alone hid 830 funders from individual searches,
+    one of them with 7,651 grants on record. `person_share` catches those.
+
+    The two branches deliberately overlap rather than partition. Plenty of
+    foundations run a scholarship programme and also make large organizational
+    grants: the Daniels Fund, the Blandin Foundation and American Savings all sit
+    between 0.5 and 0.8 person share. Excluding them from organization searches
+    to keep the branches clean would drop 30.7% of open foundations, most of them
+    wrongly. So organizations are only filtered out of funds that pay individuals
+    almost exclusively, and the per-ask review, which can show the actual grant
+    rows, carries the warning for everything in between.
+    """
+    if for_individual:
+        return (
+            f"(COALESCE({alias}.individual_share, 0) > 0.2"
+            f" OR COALESCE({alias}.person_share, 0) > 0.5)"
+        )
+    return (
+        f"(COALESCE({alias}.individual_share, 1) < 0.9"
+        f" AND COALESCE({alias}.person_share, 0) < 0.9)"
+    )
+
+
 def _size_fit(amount: int | None, median: float | None, mx: float | None) -> float:
     """1.0 when the ask sits at the foundation's typical grant, decaying with
     distance in log space. Asking far above their largest ever grant scores 0."""
@@ -228,10 +256,7 @@ def search(
     params: list = [state_u, zip3, state_u, zip3]
     if not include_closed:
         where.append("NOT f.declared_closed")
-    if for_individual:
-        where.append("COALESCE(f.individual_share, 0) > 0.2")
-    else:
-        where.append("COALESCE(f.individual_share, 1) < 0.9")
+    where.append(applicant_filter(for_individual, "f"))
     if state_u:
         where.append("COALESCE(fp.state_hits, 0) > 0")
     elif zip3:

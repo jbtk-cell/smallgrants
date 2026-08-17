@@ -217,7 +217,11 @@ def _rule_findings(profile: dict, ask: dict) -> list[Finding]:
                     "than an organization.",
                 )
             )
-        elif person is not None and grants >= 10 and person > 0.9:
+        # 0.7, not 0.9. Search keeps mixed funders visible to organizations
+        # because many of them do make large organizational grants, so the
+        # warning has to fire lower down to catch a fund that is mostly a
+        # scholarship programme.
+        elif person is not None and grants >= 10 and person > 0.7:
             # The filer typed people into the business-name field, so the
             # individual share reads 0. The names are still people.
             findings.append(

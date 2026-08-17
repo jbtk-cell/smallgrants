@@ -342,6 +342,89 @@ def applying(request: Request, ein: str, knew: str = Form("")):
     return _foundation_page(request, ein, thanks="ok")
 
 
+_individual_counts: dict = {}
+
+
+def individual_counts() -> dict:
+    """Sized once. Two numbers, both measured, shown on the scholarships page."""
+    if not _individual_counts:
+        try:
+            from smallgrants.store import connect
+
+            con = connect(data_dir(), read_only=True)
+            try:
+                n = con.execute(
+                    "SELECT count(*) FROM grants WHERE is_individual"
+                ).fetchone()[0]
+                r = con.execute(
+                    """SELECT count(*) FROM foundation_signals
+                       WHERE grant_count >= 5
+                         AND (individual_share > 0.7 OR person_share > 0.7)
+                         AND NOT declared_closed AND has_application_info"""
+                ).fetchone()[0]
+            finally:
+                con.close()
+            _individual_counts.update(individual_grants=n, reachable=r)
+        except Exception:
+            log.exception("individual counts unavailable")
+            return {"individual_grants": 0, "reachable": 0}
+    return _individual_counts
+
+
+@app.get("/scholarships", response_class=HTMLResponse)
+def scholarships(
+    request: Request, q: str = "", state: str = "", amount: str = ""
+):
+    """A separate door for people asking on their own behalf.
+
+    The main form defaults to applying as an organization, which buries the
+    individual path behind a dropdown. Students looking for scholarships are the
+    largest group with no route to the free commercial alternatives, since those
+    require a 501(c)(3) profile they cannot hold.
+    """
+    q = _clean(q, MAX_QUERY)
+    state = _clean(state, 2).upper()
+    results, error = [], None
+
+    if q and search_rate_limited(client_key(request)):
+        error = TOO_MANY_SEARCHES
+        usage.record(data_dir(), "throttled", request, query=q, state=state)
+    elif q:
+        try:
+            from smallgrants.match import search
+
+            results = search(
+                data_dir(), q, state=state or None,
+                amount=_int_or_none(amount), limit=25, for_individual=True,
+            )
+        except Exception:
+            log.exception("scholarship search failed for %r", q[:120])
+            error = CORPUS_UNAVAILABLE
+        usage.record(
+            data_dir(), "search", request, query=q, state=state,
+            amount=_int_or_none(amount), applicant="individual",
+            results=len(results), source="scholarships",
+        )
+
+    return templates.TemplateResponse(
+        request,
+        "scholarships.html",
+        {
+            "q": q, "state": state, "amount": _clean(amount, 12),
+            "results": results, "error": error, "summary": corpus_summary(),
+            "counts": individual_counts(),
+            "meta": seo.meta(
+                "/scholarships",
+                f"{q[:50]} — scholarship funders — SmallGrants" if q else
+                "Scholarships and grants to individuals, from IRS filings",
+                "Find private foundations that have paid scholarships, fellowships "
+                "and grants directly to individuals, taken from their own IRS Form "
+                "990-PF filings. Free, no account.",
+            ),
+        },
+    )
+
+
 @app.get("/method", response_class=HTMLResponse)
 def method(request: Request):
     return templates.TemplateResponse(

@@ -19,6 +19,7 @@ wanted: add a column, record it on the outbound click.
 from __future__ import annotations
 
 import hashlib
+import json
 import logging
 import os
 import secrets
@@ -67,8 +68,28 @@ CREATE INDEX IF NOT EXISTS events_visitor ON events(visitor);
 """
 
 
+def usage_dir(data_dir: str) -> str:
+    """Where the log lives. Separate from the corpus so a deployment can point it
+    at the one directory it is able to persist."""
+    d = os.environ.get("SMALLGRANTS_USAGE_DIR") or data_dir
+    os.makedirs(d, exist_ok=True)
+    return d
+
+
 def db_path(data_dir: str) -> str:
-    return os.path.join(data_dir, "usage.sqlite")
+    return os.path.join(usage_dir(data_dir), "usage.sqlite")
+
+
+def journal_path(data_dir: str) -> str:
+    """Append-only mirror of every event.
+
+    A hosted container with no persistent disk has to copy this log somewhere
+    else to keep it, and a SQLite file copied mid-write can come back unreadable.
+    One JSON object per line always survives the copy: the worst case is a torn
+    final line, which replay skips. SQLite stays the thing queries run against
+    and is rebuilt from here whenever it is missing.
+    """
+    return os.path.join(usage_dir(data_dir), "events.jsonl")
 
 
 def _connect(data_dir: str) -> sqlite3.Connection:
@@ -80,7 +101,39 @@ def _connect(data_dir: str) -> sqlite3.Connection:
     cols = {r[1] for r in con.execute("PRAGMA table_info(events)")}
     if "already_knew" not in cols:
         con.execute("ALTER TABLE events ADD COLUMN already_knew INTEGER")
+    if not con.execute("SELECT 1 FROM events LIMIT 1").fetchone():
+        _replay(con, data_dir)
     return con
+
+
+FIELDS = (
+    "ts", "day", "event", "visitor", "is_bot", "query", "state", "amount",
+    "applicant", "results", "ein", "source", "already_knew",
+)
+
+
+def _replay(con: sqlite3.Connection, data_dir: str) -> None:
+    """Rebuild an empty database from the journal, which is what happens on the
+    first request after a container restart."""
+    path = journal_path(data_dir)
+    if not os.path.exists(path):
+        return
+    rows = []
+    with open(path, encoding="utf-8") as fh:
+        for line in fh:
+            try:
+                e = json.loads(line)
+            except ValueError:
+                continue  # a torn final line from an interrupted write
+            rows.append(tuple(e.get(k) for k in FIELDS))
+    if rows:
+        con.executemany(
+            f"INSERT INTO events ({','.join(FIELDS)}) "
+            f"VALUES ({','.join('?' * len(FIELDS))})",
+            rows,
+        )
+        con.commit()
+        log.info("replayed %d events from the journal", len(rows))
 
 
 def _daily_salt() -> str:
@@ -115,35 +168,46 @@ def record(data_dir: str, event: str, request=None, **fields) -> None:
         if request is not None:
             ip = getattr(getattr(request, "client", None), "host", "") or ""
             ua = request.headers.get("user-agent", "")
-        with _lock, _connect(data_dir) as con:
-            con.execute(
-                """INSERT INTO events
-                   (ts, day, event, visitor, is_bot, query, state, amount,
-                    applicant, results, ein, source, already_knew)
-                   VALUES (?,?,?,?,?,?,?,?,?,?,?,?,?)""",
-                (
-                    datetime.now(timezone.utc).isoformat(timespec="seconds"),
-                    date.today().isoformat(),
-                    event,
-                    visitor_hash(ip, ua),
-                    int(looks_like_bot(ua)),
-                    (fields.get("query") or "")[:300] or None,
-                    fields.get("state") or None,
-                    fields.get("amount"),
-                    fields.get("applicant") or None,
-                    fields.get("results"),
-                    fields.get("ein") or None,
-                    fields.get("source") or None,
-                    fields.get("already_knew"),
-                ),
-            )
+        row = {
+            "ts": datetime.now(timezone.utc).isoformat(timespec="seconds"),
+            "day": date.today().isoformat(),
+            "event": event,
+            "visitor": visitor_hash(ip, ua),
+            "is_bot": int(looks_like_bot(ua)),
+            "query": (fields.get("query") or "")[:300] or None,
+            "state": fields.get("state") or None,
+            "amount": fields.get("amount"),
+            "applicant": fields.get("applicant") or None,
+            "results": fields.get("results"),
+            "ein": fields.get("ein") or None,
+            "source": fields.get("source") or None,
+            "already_knew": fields.get("already_knew"),
+        }
+        with _lock:
+            # Connect first. _connect replays the journal into an empty database,
+            # so appending this event beforehand would replay it and then insert
+            # it again.
+            con = _connect(data_dir)
+            with open(journal_path(data_dir), "a", encoding="utf-8") as fh:
+                fh.write(json.dumps(row) + "\n")
+            with con:
+                con.execute(
+                    f"INSERT INTO events ({','.join(FIELDS)}) "
+                    f"VALUES ({','.join('?' * len(FIELDS))})",
+                    tuple(row[k] for k in FIELDS),
+                )
+            con.close()
     except Exception:
         log.debug("usage event not recorded", exc_info=True)
 
 
 def stats(data_dir: str, days: int = 30, include_bots: bool = False) -> dict:
     """Everything the log can honestly say."""
-    if not os.path.exists(db_path(data_dir)):
+    # Either file is enough. After a container restart the journal is often the
+    # only survivor, and _connect rebuilds the database from it.
+    if not os.path.exists(db_path(data_dir)) and not os.path.exists(
+        journal_path(data_dir)
+    ):
         return {"error": "No usage log yet. It is created on the first request."}
     con = _connect(data_dir)
     where = "" if include_bots else "WHERE is_bot = 0"

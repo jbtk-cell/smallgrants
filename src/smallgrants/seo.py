@@ -167,7 +167,7 @@ def build_sitemap(data_dir: str) -> str:
 
     from smallgrants.store import connect
 
-    urls = [absolute("/"), absolute("/method")]
+    urls = [absolute("/"), absolute("/scholarships"), absolute("/method")]
     con = connect(data_dir, read_only=True)
     try:
         rows = con.execute(

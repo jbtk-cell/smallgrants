@@ -1,0 +1,82 @@
+{% extends "base.html" %}
+{% block content %}
+
+<style>
+.lede-box { border-left: 3px solid var(--ink); padding: 0 0 0 1rem; margin: .5rem 0 1.6rem;
+  max-width: 46rem; }
+.lede-box p { margin: .6rem 0; }
+.small { font-family: var(--mono); font-size: .72rem; color: var(--dim); line-height: 1.7; }
+</style>
+
+<div class="lede-box">
+  <p>Private foundations pay money directly to individuals: scholarships,
+  fellowships, emergency grants, awards. Every one of those payments is listed on
+  the foundation's tax return, with the amount and the year.</p>
+  <p class="small">In this corpus: <b>{{ "{:,}".format(counts.individual_grants) }}</b>
+  grants paid to named people, and <b>{{ "{:,}".format(counts.reachable) }}</b>
+  foundations that mostly fund individuals, never filed that they refuse
+  unsolicited requests, and published how to apply.</p>
+</div>
+
+<form class="query" method="get" action="/scholarships">
+  <label class="field">
+    <span>What is the money for</span>
+    <input type="text" name="q" value="{{ q }}" autofocus
+      placeholder="nursing student from a farming family, or first-generation engineering undergraduate">
+  </label>
+  <div class="row">
+    <label class="field"><span>Your state</span>
+      <input type="text" name="state" maxlength="2" value="{{ state }}" placeholder="MD"></label>
+    <label class="field"><span>Amount you need</span>
+      <input type="text" name="amount" value="{{ amount }}" placeholder="2500"></label>
+  </div>
+  <button type="submit">Find funders</button>
+</form>
+
+{% if error %}<p class="err">{{ error }}</p>{% endif %}
+
+{% if results %}
+  <p class="count">{{ results|length }} funders, ranked. Every one is shown with grants it actually paid.</p>
+  {% for r in results %}
+    <article class="rec" style="animation-delay: {{ loop.index0 * 28 }}ms">
+      <div class="rec-head">
+        <span class="rank">{{ "%02d"|format(loop.index) }}</span>
+        <div class="rec-name"><a href="/f/{{ r.ein }}">{{ r.name }}</a></div>
+      </div>
+      <div class="rec-where">{{ r.city }}, {{ r.state }}
+        &middot; typical grant ${{ "{:,.0f}".format(r.median_grant or 0) }}
+        &middot; largest ${{ "{:,.0f}".format(r.max_grant or 0) }}
+        &middot; {{ r.grant_count }} grants on record
+      </div>
+      <div class="sched">
+        <div class="sched-cap">Grants paid &mdash; Form 990-PF, Part XV</div>
+        {% for e in r.evidence %}
+          <div class="line">
+            <span class="who">{{ e.recipient_name or "(unnamed recipient)" }}</span>
+            <span class="yr">{{ e.tax_year }}</span>
+            <span class="amt">${{ "{:,}".format(e.amount or 0) }}</span>
+            {% if e.purpose %}<span class="why">{{ e.purpose }}</span>{% endif %}
+          </div>
+        {% endfor %}
+      </div>
+      {% if r.caveats %}
+        <ul class="notes">{% for c in r.caveats %}<li>{{ c }}</li>{% endfor %}</ul>
+      {% endif %}
+    </article>
+  {% endfor %}
+{% elif q %}
+  <p class="count">No funders matched. Try a wider description, drop the amount, or
+  search without a state. Most foundations that fund individuals give only in one
+  place, so the state filter is strict on purpose.</p>
+{% endif %}
+
+<p class="small" style="margin-top:2.5rem; max-width:46rem">
+  These are foundations, not a scholarship listing service. Nothing here was
+  submitted or paid for. A foundation appearing here means it filed a tax return
+  saying it paid money to people, which is not a promise it will do so again or
+  that it accepts applications from strangers. Read what it published about
+  applying, on its page, before you write to anyone.
+  <a href="/method">How this works, and what it cannot tell you</a>.
+</p>
+
+{% endblock %}

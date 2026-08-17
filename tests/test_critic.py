@@ -440,3 +440,97 @@ def test_foundation_structured_data_states_only_filed_facts():
     blob = str(node).lower()
     for invented in ("openness", "score", "rank", "rating", "recommend"):
         assert invented not in blob
+
+
+# --- who a foundation pays, as a filter --------------------------------------
+
+
+def _rows_matching(for_individual):
+    """Run the real predicate against synthetic foundations."""
+    import duckdb
+
+    from smallgrants.match import applicant_filter
+
+    con = duckdb.connect(":memory:")
+    con.execute(
+        """CREATE TABLE f (name TEXT, individual_share DOUBLE, person_share DOUBLE)"""
+    )
+    con.executemany(
+        "INSERT INTO f VALUES (?,?,?)",
+        [
+            ("marked individuals", 0.95, 0.95),   # filer used the person field
+            ("scholarship trust", 0.00, 0.86),    # people typed as businesses
+            ("ordinary funder", 0.02, 0.05),      # funds organizations
+            ("mixed", 0.40, 0.45),
+            ("unknown", None, None),
+        ],
+    )
+    sql = f"SELECT name FROM f WHERE {applicant_filter(for_individual, 'f')}"
+    return {r[0] for r in con.execute(sql).fetchall()}
+
+
+def test_scholarship_trusts_are_visible_to_individuals():
+    """830 funders were hidden from every individual search, including one with
+    7,651 grants on record, because only individual_share was consulted."""
+    got = _rows_matching(for_individual=True)
+    assert "scholarship trust" in got
+    assert "marked individuals" in got
+    assert "ordinary funder" not in got
+
+
+def test_organizations_keep_seeing_funders_that_also_pay_people():
+    """The branches overlap on purpose. Filtering organizations out of every
+    fund with a scholarship programme would drop 30.7% of open foundations,
+    including the Daniels Fund and the Blandin Foundation, which make large
+    organizational grants too. Only funds that pay individuals almost
+    exclusively are removed; the review warns about the rest."""
+    got = _rows_matching(for_individual=False)
+    assert "ordinary funder" in got
+    assert "mixed" in got
+    assert "scholarship trust" in got   # 0.86 is not "almost exclusively"
+    assert "marked individuals" not in got  # 0.95 is
+
+
+def test_the_review_warns_an_organization_about_a_mostly_scholarship_fund():
+    """Search stays inclusive, so the warning has to fire in the review, which
+    can show the actual grant rows."""
+    profile = scholarship_trust(person_share=0.86, individual_share=0.0, grant_count=1810)
+    findings = _rule_findings(profile, {"applicant_type": "organization", "state": "KS"})
+    assert severities(findings, "go to individuals") == ["serious"]
+
+
+def test_usage_survives_losing_the_database(tmp_path):
+    """A free container has no persistent disk. The journal is the copy that
+    gets kept, and the database is rebuilt from it on the next request."""
+    import os
+
+    from smallgrants import usage
+
+    d = str(tmp_path)
+    usage.record(d, "applying", None, ein="111", already_knew=0)
+    usage.record(d, "search", None, query="arts", results=5)
+    assert usage.stats(d, include_bots=True)["totals"]["searches"] == 1
+
+    for f in os.listdir(d):
+        if f.startswith("usage.sqlite"):
+            os.remove(os.path.join(d, f))
+
+    s = usage.stats(d, include_bots=True)
+    assert s["totals"]["searches"] == 1
+    assert s["discovery"]["funder_was_new_to_them"] == 1
+
+
+def test_a_torn_final_line_does_not_lose_the_rest(tmp_path):
+    import os
+
+    from smallgrants import usage
+
+    d = str(tmp_path)
+    for i in range(3):
+        usage.record(d, "search", None, query=f"q{i}", results=1)
+    with open(usage.journal_path(d), "a", encoding="utf-8") as fh:
+        fh.write('{"ts": "2026-01-01", "eve')  # interrupted mid-write
+    for f in os.listdir(d):
+        if f.startswith("usage.sqlite"):
+            os.remove(os.path.join(d, f))
+    assert usage.stats(d, include_bots=True)["totals"]["searches"] == 3
